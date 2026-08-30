@@ -1,0 +1,71 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { ServiceCategory } from '@/types/service';
+import { colors } from '@/constants/colors';
+import { spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
+
+export interface ServiceGridProps {
+  categories: ServiceCategory[];
+  onSelectCategory: (category: ServiceCategory) => void;
+}
+
+export const ServiceGrid: React.FC<ServiceGridProps> = ({ categories, onSelectCategory }) => {
+  return (
+    <View style={styles.grid}>
+      {categories.map((cat) => (
+        <TouchableOpacity
+          key={cat.id}
+          style={styles.item}
+          onPress={() => onSelectCategory(cat)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.iconBox}>
+            <Ionicons name={cat.icon as any} size={28} color={colors.primary} />
+          </View>
+          <Text style={styles.label} numberOfLines={2}>
+            {cat.name}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: spacing.md,
+    justifyContent: 'space-between',
+  },
+  item: {
+    width: '30%',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    borderRadius: spacing.radiusMd,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  label: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.text,
+    textAlign: 'center',
+  },
+});
+
+export default ServiceGrid;
