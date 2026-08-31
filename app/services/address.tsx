@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Modal, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import Header from '@/components/common/Header';
 import Button from '@/components/common/Button';
+import Input from '@/components/common/Input';
 import BookingStepper from '@/components/booking/BookingStepper';
 import AddressCard from '@/components/booking/AddressCard';
 import SectionHeader from '@/components/common/SectionHeader';
@@ -13,28 +15,78 @@ import useAuth from '@/hooks/useAuth';
 import useBooking from '@/hooks/useBooking';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
 import { Address } from '@/types/user';
 
 export default function AddressScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { updateBooking } = useBooking();
+  const { draft, updateBooking } = useBooking();
 
-  const userAddresses = user?.addresses || [
-    {
-      id: 'addr-1',
-      title: 'Home',
-      street: 'Flat 402, Green Valley Apartments, HSR Layout',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      zipCode: '560102',
-      isDefault: true,
-    },
-  ];
+  const [addresses, setAddresses] = useState<Address[]>(
+    user?.addresses || [
+      {
+        id: 'addr-1',
+        title: 'Home',
+        street: 'Flat 402, Green Valley Apartments, HSR Layout',
+        city: 'Bengaluru',
+        state: 'Karnataka',
+        zipCode: '560102',
+        isDefault: true,
+      },
+      {
+        id: 'addr-2',
+        title: 'Office',
+        street: 'Building 4, Tech Park, Outer Ring Road',
+        city: 'Bengaluru',
+        state: 'Karnataka',
+        zipCode: '560103',
+        type: 'work',
+      },
+    ]
+  );
 
-  const [selectedAddr, setSelectedAddr] = useState<Address>(userAddresses[0]);
+  const [selectedAddr, setSelectedAddr] = useState<Address>(
+    draft.address || addresses[0]
+  );
+
+  // New Address Form Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newStreet, setNewStreet] = useState('');
+  const [newCity, setNewCity] = useState('Bengaluru');
+  const [newState, setNewState] = useState('Karnataka');
+  const [newZip, setNewZip] = useState('');
+
+  const handleAddNewAddress = () => {
+    if (!newStreet.trim() || !newZip.trim()) {
+      Alert.alert('Required Fields', 'Please enter street address and postal code.');
+      return;
+    }
+
+    const createdAddress: Address = {
+      id: `addr-${Date.now()}`,
+      title: newTitle.trim() || 'Home',
+      street: newStreet.trim(),
+      city: newCity.trim(),
+      state: newState.trim(),
+      zipCode: newZip.trim(),
+    };
+
+    setAddresses((prev) => [createdAddress, ...prev]);
+    setSelectedAddr(createdAddress);
+    setShowAddModal(false);
+    setNewTitle('');
+    setNewStreet('');
+    setNewZip('');
+  };
 
   const handleNext = () => {
+    if (!selectedAddr) {
+      Alert.alert('Select Address', 'Please select a service location address.');
+      return;
+    }
+
     updateBooking({ address: selectedAddr });
     router.push('/services/payment' as any);
   };
@@ -45,15 +97,16 @@ export default function AddressScreen() {
       <BookingStepper currentStep={2} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <SectionHeader
-          title="Service Location"
+          title="Service Location Address"
           actionTitle="+ Add New"
-          onAction={() => router.push('/profile/addresses' as any)}
+          onAction={() => setShowAddModal(true)}
         />
-        {userAddresses.map((addr) => (
+
+        {addresses.map((addr) => (
           <AddressCard
             key={addr.id}
             address={addr}
-            selected={selectedAddr.id === addr.id}
+            selected={selectedAddr?.id === addr.id}
             onSelect={setSelectedAddr}
           />
         ))}
@@ -66,6 +119,54 @@ export default function AddressScreen() {
           style={styles.btn}
         />
       </ScrollView>
+
+      {/* Add New Address Modal */}
+      <Modal visible={showAddModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add New Address</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Input
+              label="Address Label (e.g. Home, Office)"
+              placeholder="e.g. Home"
+              value={newTitle}
+              onChangeText={setNewTitle}
+            />
+            <Input
+              label="Street & Apartment"
+              placeholder="House/Flat No., Street Name, Area"
+              value={newStreet}
+              onChangeText={setNewStreet}
+            />
+            <Input
+              label="City"
+              placeholder="Bengaluru"
+              value={newCity}
+              onChangeText={setNewCity}
+            />
+            <Input
+              label="Postal Code (PIN)"
+              placeholder="560102"
+              keyboardType="number-pad"
+              value={newZip}
+              onChangeText={setNewZip}
+            />
+
+            <Button
+              title="Save & Select Address"
+              variant="primary"
+              size="large"
+              onPress={handleAddNewAddress}
+              style={styles.modalBtn}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -81,5 +182,30 @@ const styles = StyleSheet.create({
   },
   btn: {
     marginTop: spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: spacing.radiusLg,
+    borderTopRightRadius: spacing.radiusLg,
+    padding: spacing.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+  },
+  modalBtn: {
+    marginTop: spacing.md,
   },
 });

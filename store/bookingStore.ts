@@ -21,7 +21,7 @@ let draft: BookingDraft = {};
 const listeners = new Set<() => void>();
 
 export const bookingStore = {
-  get: () => draft,
+  get: (): BookingDraft => draft,
   set: (newDraft: Partial<BookingDraft>) => {
     draft = { ...draft, ...newDraft };
     listeners.forEach((l) => l());
@@ -35,3 +35,5 @@ export const bookingStore = {
     return () => listeners.delete(listener);
   },
 };
+
+export default bookingStore;

@@ -4,8 +4,13 @@ import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 
+export interface TimeSlotOption {
+  time: string;
+  available?: boolean;
+}
+
 export interface TimeSlotProps {
-  slots: string[];
+  slots: (string | TimeSlotOption)[];
   selectedSlot: string;
   onSelectSlot: (slot: string) => void;
 }
@@ -13,16 +18,32 @@ export interface TimeSlotProps {
 export const TimeSlot: React.FC<TimeSlotProps> = ({ slots, selectedSlot, onSelectSlot }) => {
   return (
     <View style={styles.grid}>
-      {slots.map((slot) => {
-        const isSelected = slot === selectedSlot;
+      {slots.map((item) => {
+        const slotText = typeof item === 'string' ? item : item.time;
+        const isAvailable = typeof item === 'string' ? true : item.available !== false;
+        const isSelected = slotText === selectedSlot;
+
         return (
           <TouchableOpacity
-            key={slot}
-            style={[styles.slot, isSelected && styles.selectedSlot]}
-            onPress={() => onSelectSlot(slot)}
+            key={slotText}
+            style={[
+              styles.slot,
+              isSelected && styles.selectedSlot,
+              !isAvailable && styles.disabledSlot,
+            ]}
+            onPress={() => isAvailable && onSelectSlot(slotText)}
             activeOpacity={0.7}
+            disabled={!isAvailable}
           >
-            <Text style={[styles.slotText, isSelected && styles.selectedText]}>{slot}</Text>
+            <Text
+              style={[
+                styles.slotText,
+                isSelected && styles.selectedText,
+                !isAvailable && styles.disabledText,
+              ]}
+            >
+              {slotText}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -40,25 +61,34 @@ const styles = StyleSheet.create({
   slot: {
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
-    borderRadius: spacing.radiusSm,
+    borderRadius: spacing.radiusMd,
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     minWidth: '47%',
+    flex: 1,
     alignItems: 'center',
   },
   selectedSlot: {
     backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
+  disabledSlot: {
+    backgroundColor: colors.divider,
+    borderColor: colors.border,
+    opacity: 0.5,
+  },
   slotText: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs + 1,
     fontWeight: typography.fontWeight.medium,
     color: colors.text,
   },
   selectedText: {
     color: colors.primary,
     fontWeight: typography.fontWeight.bold,
+  },
+  disabledText: {
+    color: colors.textMuted,
   },
 });
 

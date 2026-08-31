@@ -8,6 +8,7 @@ export interface DateOption {
   dayName: string;
   dayNumber: string;
   fullDate: string;
+  disabled?: boolean;
 }
 
 export interface DatePickerProps {
@@ -21,15 +22,26 @@ export const DatePicker: React.FC<DatePickerProps> = ({ dates, selectedDate, onS
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
       {dates.map((item) => {
         const isSelected = item.fullDate === selectedDate;
+        const isDisabled = item.disabled;
+
         return (
           <TouchableOpacity
             key={item.fullDate}
-            style={[styles.dateItem, isSelected && styles.selectedItem]}
-            onPress={() => onSelectDate(item.fullDate)}
+            style={[
+              styles.dateItem,
+              isSelected && styles.selectedItem,
+              isDisabled && styles.disabledItem,
+            ]}
+            onPress={() => !isDisabled && onSelectDate(item.fullDate)}
             activeOpacity={0.7}
+            disabled={isDisabled}
           >
-            <Text style={[styles.dayName, isSelected && styles.selectedText]}>{item.dayName}</Text>
-            <Text style={[styles.dayNumber, isSelected && styles.selectedText]}>{item.dayNumber}</Text>
+            <Text style={[styles.dayName, isSelected && styles.selectedText, isDisabled && styles.disabledText]}>
+              {item.dayName}
+            </Text>
+            <Text style={[styles.dayNumber, isSelected && styles.selectedText, isDisabled && styles.disabledText]}>
+              {item.dayNumber}
+            </Text>
           </TouchableOpacity>
         );
       })}
@@ -44,21 +56,32 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dateItem: {
-    width: 64,
-    height: 72,
+    width: 68,
+    height: 76,
     borderRadius: spacing.radiusMd,
     backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
   },
   selectedItem: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  disabledItem: {
+    backgroundColor: colors.divider,
+    borderColor: colors.border,
+    opacity: 0.5,
   },
   dayName: {
     fontSize: typography.fontSize.xs,
+    fontWeight: typography.fontWeight.semibold,
     color: colors.textSecondary,
     textTransform: 'uppercase',
   },
@@ -70,6 +93,9 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     color: colors.white,
+  },
+  disabledText: {
+    color: colors.textMuted,
   },
 });
 

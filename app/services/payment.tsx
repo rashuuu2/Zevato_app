@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import Header from '@/components/common/Header';
 import Button from '@/components/common/Button';
 import BookingStepper from '@/components/booking/BookingStepper';
 import PaymentSummary from '@/components/booking/PaymentSummary';
-import ProfileMenuItem from '@/components/profile/ProfileMenuItem';
 import SectionHeader from '@/components/common/SectionHeader';
 
 import useBooking from '@/hooks/useBooking';
 import { bookingService } from '@/services/bookings';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
+import { typography } from '@/constants/typography';
 import { PaymentMethod } from '@/types/user';
 
 export default function PaymentScreen() {
@@ -22,38 +23,65 @@ export default function PaymentScreen() {
   const [loading, setLoading] = useState(false);
 
   const paymentOptions: PaymentMethod[] = [
-    { id: 'p-1', type: 'upi', title: 'Google Pay / PhonePe (UPI)', details: 'Instant auto-refund guarantee' },
-    { id: 'p-2', type: 'card', title: 'Credit / Debit Card', details: 'Visa, MasterCard, RuPay' },
-    { id: 'p-3', type: 'cash', title: 'Pay After Service', details: 'Cash or UPI on technician completion' },
+    { id: 'p-1', type: 'upi', title: 'Google Pay / PhonePe (UPI)', details: 'Instant confirmation & 100% money back guarantee', isDefault: true },
+    { id: 'p-2', type: 'card', title: 'Credit / Debit Card', details: 'Visa, MasterCard, RuPay accepted' },
+    { id: 'p-3', type: 'cash', title: 'Pay After Service', details: 'Pay technician via Cash or UPI upon job completion' },
   ];
 
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(paymentOptions[0]);
+  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>(
+    draft.paymentMethod || paymentOptions[0]
+  );
 
   const handleConfirm = async () => {
+    // Payment Validation
+    if (!draft.selectedOption && !draft.serviceTitle) {
+      Alert.alert('Incomplete Booking', 'Please select a service package first.');
+      return;
+    }
+
+    if (!draft.scheduledDate || !draft.scheduledTimeSlot) {
+      Alert.alert('Incomplete Schedule', 'Please select a service date and time slot.');
+      return;
+    }
+
+    if (!draft.address) {
+      Alert.alert('Missing Address', 'Please select a service location address.');
+      return;
+    }
+
+    if (!selectedPayment) {
+      Alert.alert('Select Payment', 'Please select a payment method.');
+      return;
+    }
+
     try {
       setLoading(true);
+
+      const optionPrice = draft.selectedOption?.price || 599;
+      const discount = 100;
+      const taxable = Math.max(0, optionPrice - discount);
+      const tax = Math.round(taxable * 0.18);
+      const finalTotal = taxable + tax;
+
       const created = await bookingService.createBooking({
-        serviceTitle: draft.serviceTitle || 'Foam & Power Jet Service',
+        serviceId: draft.serviceId || 'ac-jet-service',
+        serviceTitle: draft.serviceTitle || 'Appliance Care Service',
         selectedOption: draft.selectedOption || {
-          id: 'opt-ac-1',
-          title: 'Foam & Power Jet Service (1 Unit)',
-          description: 'Complete deep cleaning using specialized jet pump',
-          price: 599,
+          id: 'opt-gen-1',
+          title: draft.serviceTitle || 'Standard Care Package',
+          description: 'Deep service and diagnostic tune-up',
+          price: optionPrice,
           durationMinutes: 45,
-          features: ['High pressure jet pump wash'],
+          features: ['Certified technician inspection', '30-day warranty'],
         },
-        scheduledDate: draft.scheduledDate || 'Today, 2:30 PM',
-        scheduledTimeSlot: draft.scheduledTimeSlot || '02:00 PM - 04:00 PM',
-        address: draft.address || {
-          id: 'addr-1',
-          title: 'Home',
-          street: 'Flat 402, Green Valley Apartments',
-          city: 'Bengaluru',
-          state: 'Karnataka',
-          zipCode: '560102',
-        },
+        categoryName: draft.categoryName || 'Appliance Care',
+        brandName: draft.brandName,
+        productName: draft.productName,
+        scheduledDate: draft.scheduledDate,
+        scheduledTimeSlot: draft.scheduledTimeSlot,
+        address: draft.address,
         paymentMethod: selectedPayment,
-        totalAmount: (draft.selectedOption?.price || 599) * 1.18,
+        totalAmount: finalTotal,
       });
 
       resetBooking();
@@ -65,7 +93,7 @@ export default function PaymentScreen() {
       });
     } catch (error) {
       setLoading(false);
-      Alert.alert('Payment Error', 'Failed to process payment. Please try again.');
+      Alert.alert('Booking Error', 'Failed to process your booking. Please try again.');
     }
   };
 
@@ -74,26 +102,89 @@ export default function PaymentScreen() {
       <Header title="Payment & Review" />
       <BookingStepper currentStep={3} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Booking Summary Context Card */}
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>Booking Summary</Text>
+
+          <View style={styles.summaryRow}>
+            <Ionicons name="construct-outline" size={18} color={colors.primary} />
+            <View style={styles.summaryTextGroup}>
+              <Text style={styles.summaryLabel}>Service & Model</Text>
+              <Text style={styles.summaryValue}>
+                {draft.serviceTitle || 'Appliance Service'}{' '}
+                {draft.productName ? `(${draft.productName})` : ''}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+            <View style={styles.summaryTextGroup}>
+              <Text style={styles.summaryLabel}>Schedule</Text>
+              <Text style={styles.summaryValue}>
+                {draft.scheduledDate || 'Today'}, {draft.scheduledTimeSlot || '10:00 AM'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.summaryRow}>
+            <Ionicons name="location-outline" size={18} color={colors.primary} />
+            <View style={styles.summaryTextGroup}>
+              <Text style={styles.summaryLabel}>Service Location</Text>
+              <Text style={styles.summaryValue} numberOfLines={1}>
+                {draft.address?.title ? `${draft.address.title}: ` : ''}
+                {draft.address?.street || 'HSR Layout, Bengaluru'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Pricing Summary */}
         <PaymentSummary
-          itemTitle={draft.selectedOption?.title || 'Foam & Power Jet Service'}
+          itemTitle={draft.selectedOption?.title || draft.serviceTitle || 'Service Package'}
           itemPrice={draft.selectedOption?.price || 599}
           discount={100}
         />
 
+        {/* Payment Methods */}
         <SectionHeader title="Select Payment Method" />
-        {paymentOptions.map((pay) => (
-          <ProfileMenuItem
-            key={pay.id}
-            icon={pay.type === 'upi' ? 'qr-code-outline' : pay.type === 'card' ? 'card-outline' : 'cash-outline'}
-            title={pay.title}
-            subtitle={pay.details}
-            badge={selectedPayment.id === pay.id ? 'SELECTED' : undefined}
-            onPress={() => setSelectedPayment(pay)}
-          />
-        ))}
+        {paymentOptions.map((pay) => {
+          const isSelected = selectedPayment.id === pay.id;
+          return (
+            <TouchableOpacity
+              key={pay.id}
+              style={[styles.payCard, isSelected && styles.selectedPayCard]}
+              onPress={() => setSelectedPayment(pay)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.payIconCircle}>
+                <Ionicons
+                  name={
+                    pay.type === 'upi'
+                      ? 'qr-code-outline'
+                      : pay.type === 'card'
+                      ? 'card-outline'
+                      : 'cash-outline'
+                  }
+                  size={22}
+                  color={colors.primary}
+                />
+              </View>
+              <View style={styles.payDetails}>
+                <Text style={styles.payTitle}>{pay.title}</Text>
+                <Text style={styles.paySubtitle}>{pay.details}</Text>
+              </View>
+              <Ionicons
+                name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                size={22}
+                color={isSelected ? colors.primary : colors.textMuted}
+              />
+            </TouchableOpacity>
+          );
+        })}
 
         <Button
-          title="Confirm & Pay"
+          title="Confirm Booking"
           variant="primary"
           size="large"
           loading={loading}
@@ -114,7 +205,76 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingBottom: spacing.xl,
   },
+  summaryCard: {
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: spacing.radiusMd,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.xs,
+    gap: spacing.sm,
+  },
+  summaryTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.xs - 2,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  summaryTextGroup: {
+    flex: 1,
+  },
+  summaryLabel: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+  },
+  summaryValue: {
+    fontSize: typography.fontSize.xs + 1,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    marginTop: 1,
+  },
+  payCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    borderRadius: spacing.radiusMd,
+    marginBottom: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  selectedPayCard: {
+    borderColor: colors.primary,
+    backgroundColor: '#F4F8FF',
+  },
+  payIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  payDetails: {
+    flex: 1,
+  },
+  payTitle: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+  },
+  paySubtitle: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
   btn: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
   },
 });
