@@ -1,6 +1,6 @@
 import { api } from './api';
 import { bookings as mockBookings } from '@/data/bookings';
-import { Booking } from '@/types/booking';
+import { Booking, BookingStatus } from '@/types/booking';
 
 export const bookingService = {
   getAllBookings: async (): Promise<Booking[]> => {
@@ -51,10 +51,18 @@ export const bookingService = {
         details: 'Instant confirmation',
       },
       totalAmount: bookingData.totalAmount || total,
+      technician: {
+        id: 'tech-101',
+        name: 'Ramesh Kumar',
+        phone: '+91 98765 43210',
+        rating: 4.9,
+        completedJobs: 428,
+        avatarUrl: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150',
+      },
       steps: [
         { id: '1', title: 'Booking Confirmed', completed: true, timestamp: 'Just now' },
-        { id: '2', title: 'Technician Assignment', completed: false },
-        { id: '3', title: 'Technician En Route', completed: false },
+        { id: '2', title: 'Technician Assigned', completed: true, timestamp: '1 min ago' },
+        { id: '3', title: 'Technician On The Way', completed: false },
         { id: '4', title: 'Service Execution', completed: false },
         { id: '5', title: 'Completion & Invoice', completed: false },
       ],
@@ -63,5 +71,28 @@ export const bookingService = {
 
     mockBookings.unshift(newBooking);
     return api.post(newBooking);
+  },
+  updateBookingStatus: async (id: string, status: BookingStatus): Promise<Booking | undefined> => {
+    const booking = mockBookings.find((b) => b.id === id);
+    if (booking) {
+      booking.status = status;
+      if (status === 'completed' && booking.steps) {
+        booking.steps = booking.steps.map((s) => ({ ...s, completed: true }));
+      }
+    }
+    return api.put(booking);
+  },
+  cancelBooking: async (id: string, reason?: string): Promise<Booking | undefined> => {
+    const booking = mockBookings.find((b) => b.id === id);
+    if (booking) {
+      booking.status = 'cancelled';
+      if (booking.steps) {
+        booking.steps = [
+          ...booking.steps.filter((s) => s.completed),
+          { id: 'cancel', title: `Cancelled: ${reason || 'User requested'}`, completed: true, timestamp: 'Just now' },
+        ];
+      }
+    }
+    return api.put(booking);
   },
 };

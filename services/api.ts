@@ -11,6 +11,10 @@ export const api = {
     await mockApiDelay(delayMs);
     return data;
   },
+  put: async <T>(data: T, delayMs = 400): Promise<T> => {
+    await mockApiDelay(delayMs);
+    return data;
+  },
 };
 
 export default api;

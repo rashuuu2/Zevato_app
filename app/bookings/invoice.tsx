@@ -14,56 +14,80 @@ import { formatCurrency } from '@/utils/formatCurrency';
 
 export default function InvoiceScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const booking = bookings.find((b) => b.id === id) || bookings[1];
-  const invoice = booking.invoice || {
-    id: 'INV-87120',
-    bookingId: booking.id,
-    date: '24 Aug 2026',
-    subtotal: 422.88,
-    tax: 76.12,
-    discount: 0,
-    total: 499,
-    items: [
-      { description: 'Washing Machine Drum Descaling', amount: 422.88 },
-      { description: 'GST (18%)', amount: 76.12 },
-    ],
-  };
+  const booking = bookings.find((b) => b.id === id) || bookings[1] || bookings[0];
+
+  const basePrice = booking?.selectedOption?.price || 599;
+  const discount = 100;
+  const taxable = Math.max(0, basePrice - discount);
+  const tax = Math.round(taxable * 0.18);
+  const total = booking?.totalAmount || taxable + tax;
+
+  const invoiceId = booking?.invoice?.id || `INV-${booking.id.replace(/[^0-9]/g, '') || '87120'}`;
+  const invoiceDate = booking?.invoice?.date || booking.scheduledDate || 'Today';
 
   const handleDownload = () => {
-    Alert.alert('Invoice Downloaded', `PDF Invoice ${invoice.id} saved to your device downloads.`);
+    Alert.alert('Invoice Downloaded', `Tax invoice ${invoiceId} has been saved to your device downloads.`);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <Header title={`Invoice ${invoice.id}`} />
+      <Header title={`Tax Invoice ${invoiceId}`} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.invoiceCard}>
+          {/* Header & GSTIN */}
           <Text style={styles.companyTitle}>Zevota Care Services Pvt Ltd</Text>
-          <Text style={styles.companySub}>GSTIN: 29AAAAA0000A1Z5</Text>
+          <Text style={styles.companySub}>GSTIN: 29AAAAA0000A1Z5 • FSSAI/ISO 9001:2015</Text>
+          <Text style={styles.companyAddress}>HSR Layout Sector 1, Bengaluru, KA - 560102</Text>
+
           <View style={styles.divider} />
 
+          {/* Reference Meta */}
+          <View style={styles.row}>
+            <Text style={styles.label}>Invoice Number:</Text>
+            <Text style={styles.valBold}>{invoiceId}</Text>
+          </View>
           <View style={styles.row}>
             <Text style={styles.label}>Invoice Date:</Text>
-            <Text style={styles.val}>{invoice.date}</Text>
+            <Text style={styles.val}>{invoiceDate}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Booking Reference:</Text>
-            <Text style={styles.val}>{invoice.bookingId}</Text>
+            <Text style={styles.valBold}>{booking.id}</Text>
           </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Service Address:</Text>
+            <Text style={styles.val} numberOfLines={1}>
+              {booking.address.street}, {booking.address.city}
+            </Text>
+          </View>
+
           <View style={styles.divider} />
 
-          <Text style={styles.tableHeading}>Item Summary</Text>
-          {invoice.items.map((item, idx) => (
-            <View key={idx} style={styles.row}>
-              <Text style={styles.label}>{item.description}</Text>
-              <Text style={styles.val}>{formatCurrency(item.amount)}</Text>
+          {/* Itemized Table */}
+          <Text style={styles.tableHeading}>Itemized Service Breakdown</Text>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>{booking.serviceTitle} ({booking.selectedOption?.title || 'Care Package'})</Text>
+            <Text style={styles.val}>{formatCurrency(basePrice)}</Text>
+          </View>
+
+          {discount > 0 && (
+            <View style={styles.row}>
+              <Text style={styles.discountLabel}>Special Plan Discount</Text>
+              <Text style={styles.discountVal}>-{formatCurrency(discount)}</Text>
             </View>
-          ))}
+          )}
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Taxes & Fees (18% GST)</Text>
+            <Text style={styles.val}>{formatCurrency(tax)}</Text>
+          </View>
+
           <View style={styles.divider} />
 
           <View style={[styles.row, styles.totalRow]}>
             <Text style={styles.totalLabel}>Total Amount Paid:</Text>
-            <Text style={styles.totalVal}>{formatCurrency(invoice.total)}</Text>
+            <Text style={styles.totalVal}>{formatCurrency(total)}</Text>
           </View>
         </View>
 
@@ -86,6 +110,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
   invoiceCard: {
     backgroundColor: colors.surface,
@@ -100,8 +125,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   companySub: {
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.xs - 1,
     color: colors.textMuted,
+    marginTop: 2,
+  },
+  companyAddress: {
+    fontSize: typography.fontSize.xs,
+    color: colors.textSecondary,
     marginTop: 2,
   },
   divider: {
@@ -112,22 +142,37 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs + 2,
   },
   label: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs + 1,
     color: colors.textSecondary,
+    flex: 1,
   },
   val: {
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs + 1,
     fontWeight: typography.fontWeight.medium,
     color: colors.text,
+  },
+  valBold: {
+    fontSize: typography.fontSize.xs + 1,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+  },
+  discountLabel: {
+    fontSize: typography.fontSize.xs + 1,
+    color: colors.success,
+  },
+  discountVal: {
+    fontSize: typography.fontSize.xs + 1,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.success,
   },
   tableHeading: {
     fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.bold,
     color: colors.text,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs + 2,
   },
   totalRow: {
     marginBottom: 0,
