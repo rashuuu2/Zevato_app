@@ -11,7 +11,7 @@ import { spacing } from '@/constants/spacing';
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, user } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -32,8 +32,13 @@ export default function SplashScreen() {
           // First launch: Intro Onboarding flow
           router.replace('/(onboarding)/welcome' as any);
         } else if (isSignedIn) {
-          // Returning authenticated user: Home dashboard
-          router.replace('/(tabs)/home' as any);
+          if (user?.profileCompleted) {
+            // Returning authenticated user with complete profile: Home dashboard
+            router.replace('/(tabs)/home' as any);
+          } else {
+            // Authenticated user with incomplete profile: Complete Profile screen
+            router.replace('/(auth)/complete-profile' as any);
+          }
         } else {
           // Returning unauthenticated user: Sign In screen
           router.replace('/(auth)/login' as any);
@@ -51,7 +56,7 @@ export default function SplashScreen() {
     return () => {
       isMounted = false;
     };
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, user?.profileCompleted]);
 
   return (
     <View style={styles.container}>

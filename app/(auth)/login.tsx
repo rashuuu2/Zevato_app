@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSignIn } from '@clerk/expo/legacy';
 import { useSSO } from '@clerk/expo';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
@@ -52,7 +53,7 @@ export default function LoginScreen() {
 
     try {
       if (!isLoaded || !signIn) {
-        router.replace('/(tabs)/home' as any);
+        router.replace('/(auth)/complete-profile' as any);
         return;
       }
 
@@ -65,7 +66,6 @@ export default function LoginScreen() {
         if (setActive) {
           await setActive({ session: result.createdSessionId });
         }
-        router.replace('/(tabs)/home' as any);
       } else {
         setError('Additional sign in steps required.');
       }
@@ -87,7 +87,6 @@ export default function LoginScreen() {
 
       if (createdSessionId && setSSOActive) {
         await setSSOActive({ session: createdSessionId });
-        router.replace('/(tabs)/home' as any);
       }
     } catch (err: any) {
       const errMsg = authService.formatAuthError(err);

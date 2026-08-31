@@ -1,3 +1,17 @@
+export interface ZevotaAddress {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+}
+
+export interface ZevotaUserMetadata {
+  profileCompleted?: boolean;
+  phone?: string;
+  address?: ZevotaAddress;
+}
+
 export interface Address {
   id: string;
   title: string;
@@ -5,6 +19,7 @@ export interface Address {
   city: string;
   state: string;
   zipCode: string;
+  country?: string;
   isDefault?: boolean;
   type?: 'home' | 'work' | 'other';
 }
@@ -23,8 +38,11 @@ export interface UserProfile {
   email: string;
   phone: string;
   avatarUrl?: string;
+  address?: ZevotaAddress;
+  profileCompleted?: boolean;
   addresses: Address[];
   paymentMethods: PaymentMethod[];
   hasProtectionPlan?: boolean;
   protectionPlanExpiry?: string;
 }
+

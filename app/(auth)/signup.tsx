@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSignUp } from '@clerk/expo/legacy';
 import { useSSO } from '@clerk/expo';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
@@ -92,7 +93,6 @@ export default function SignupScreen() {
 
       if (createdSessionId && setSSOActive) {
         await setSSOActive({ session: createdSessionId });
-        router.replace('/(tabs)/home' as any);
       }
     } catch (err: any) {
       const errMsg = authService.formatAuthError(err);

@@ -1,44 +1,23 @@
 import { UserProfile, Address, PaymentMethod } from '@/types/user';
 
 let userProfile: UserProfile = {
-  id: 'user-001',
-  name: 'Alex Johnson',
-  email: 'alex.johnson@example.com',
-  phone: '+91 98765 12345',
-  addresses: [
-    {
-      id: 'addr-1',
-      title: 'Home',
-      street: 'Flat 402, Green Valley Apartments, HSR Layout',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      zipCode: '560102',
-      isDefault: true,
-      type: 'home',
-    },
-    {
-      id: 'addr-2',
-      title: 'Work',
-      street: 'Tower B, Tech Park, Outer Ring Road',
-      city: 'Bengaluru',
-      state: 'Karnataka',
-      zipCode: '560103',
-      isDefault: false,
-      type: 'work',
-    },
-  ],
+  id: '',
+  name: 'User',
+  email: '',
+  phone: 'Add phone number',
+  addresses: [],
   paymentMethods: [
     {
       id: 'pay-1',
       type: 'upi',
-      title: 'Google Pay',
-      details: 'alex@okaxis',
+      title: 'Google Pay (UPI)',
+      details: 'Instant Confirmation',
       isDefault: true,
     },
     {
       id: 'pay-2',
       type: 'card',
-      title: 'HDFC Bank Visa Card',
+      title: 'Visa / Mastercard',
       details: '•••• 4242',
       isDefault: false,
     },

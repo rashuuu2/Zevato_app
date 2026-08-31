@@ -11,6 +11,7 @@ import PaymentSummary from '@/components/booking/PaymentSummary';
 import SectionHeader from '@/components/common/SectionHeader';
 
 import useBooking from '@/hooks/useBooking';
+import useAuth from '@/hooks/useAuth';
 import { bookingService } from '@/services/bookings';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
@@ -19,6 +20,7 @@ import { PaymentMethod } from '@/types/user';
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { draft, resetBooking } = useBooking();
   const [loading, setLoading] = useState(false);
 
@@ -133,7 +135,7 @@ export default function PaymentScreen() {
               <Text style={styles.summaryLabel}>Service Location</Text>
               <Text style={styles.summaryValue} numberOfLines={1}>
                 {draft.address?.title ? `${draft.address.title}: ` : ''}
-                {draft.address?.street || 'HSR Layout, Bengaluru'}
+                {draft.address?.street || (user?.address ? `${user.address.street}, ${user.address.city}` : 'Add service address')}
               </Text>
             </View>
           </View>

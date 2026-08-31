@@ -1,17 +1,27 @@
 import React, { useEffect } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import useAuth from '@/hooks/useAuth';
 import { colors } from '@/constants/colors';
 
 export default function AuthLayout() {
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useAuth();
+  const segments = useSegments();
+  const { isLoaded, isSignedIn, user } = useAuth();
 
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      router.replace('/(tabs)/home' as any);
+    if (!isLoaded) return;
+
+    if (isSignedIn) {
+      if (user?.profileCompleted) {
+        router.replace('/(tabs)/home' as any);
+      } else {
+        const currentRoute = segments[segments.length - 1];
+        if (currentRoute !== 'complete-profile') {
+          router.replace('/(auth)/complete-profile' as any);
+        }
+      }
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, user?.profileCompleted, segments]);
 
   return (
     <Stack
@@ -29,3 +39,4 @@ export default function AuthLayout() {
     </Stack>
   );
 }
+

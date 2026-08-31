@@ -23,31 +23,10 @@ export default function AddressScreen() {
   const { user } = useAuth();
   const { draft, updateBooking } = useBooking();
 
-  const [addresses, setAddresses] = useState<Address[]>(
-    user?.addresses || [
-      {
-        id: 'addr-1',
-        title: 'Home',
-        street: 'Flat 402, Green Valley Apartments, HSR Layout',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        zipCode: '560102',
-        isDefault: true,
-      },
-      {
-        id: 'addr-2',
-        title: 'Office',
-        street: 'Building 4, Tech Park, Outer Ring Road',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        zipCode: '560103',
-        type: 'work',
-      },
-    ]
-  );
+  const [addresses, setAddresses] = useState<Address[]>(user?.addresses || []);
 
   const [selectedAddr, setSelectedAddr] = useState<Address>(
-    draft.address || addresses[0]
+    draft.address || (user?.addresses && user.addresses.length > 0 ? user.addresses[0] : ({} as Address))
   );
 
   // New Address Form Modal State

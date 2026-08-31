@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UserProfile } from '@/types/user';
 import { colors } from '@/constants/colors';
@@ -12,18 +12,35 @@ export interface ProfileHeaderProps {
 }
 
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ user, onEditPress }) => {
+  const getInitials = (name: string) => {
+    if (!name || name === 'User') return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.avatarBox}>
-        <Ionicons name="person-circle-outline" size={72} color={colors.primary} />
+        {user.avatarUrl ? (
+          <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+        ) : (
+          <View style={styles.initialsCircle}>
+            <Text style={styles.initialsText}>{getInitials(user.name)}</Text>
+          </View>
+        )}
         {onEditPress && (
           <TouchableOpacity style={styles.editBadge} onPress={onEditPress} activeOpacity={0.7}>
             <Ionicons name="camera-outline" size={14} color={colors.white} />
           </TouchableOpacity>
         )}
       </View>
-      <Text style={styles.name}>{user.name}</Text>
-      <Text style={styles.contact}>{user.email} • {user.phone}</Text>
+      <Text style={styles.name}>{user.name || 'User'}</Text>
+      <Text style={styles.contact}>
+        {user.email || ''}{user.email && user.phone ? ' • ' : ''}{user.phone || ''}
+      </Text>
     </View>
   );
 };
@@ -39,6 +56,24 @@ const styles = StyleSheet.create({
   avatarBox: {
     position: 'relative',
     marginBottom: spacing.xs,
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  initialsCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  initialsText: {
+    fontSize: typography.fontSize.heading,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.white,
   },
   editBadge: {
     position: 'absolute',

@@ -65,7 +65,9 @@ export default function HomeScreen() {
             <View style={styles.locationRow}>
               <Ionicons name="location-outline" size={14} color={colors.primary} />
               <Text style={styles.locationText} numberOfLines={1}>
-                {user?.addresses[0]?.street || 'HSR Layout, Bengaluru'}
+                {user?.address
+                  ? `${user.address.street}, ${user.address.city}`
+                  : user?.addresses[0]?.street || 'Add service address'}
               </Text>
             </View>
           </View>

@@ -7,13 +7,17 @@ import { typography } from '@/constants/typography';
 
 export default function TabsLayout() {
   const router = useRouter();
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn, user } = useAuth();
 
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
       router.replace('/(auth)/login' as any);
+    } else if (!user?.profileCompleted) {
+      router.replace('/(auth)/complete-profile' as any);
     }
-  }, [isLoaded, isSignedIn]);
+  }, [isLoaded, isSignedIn, user?.profileCompleted]);
 
   return (
     <Tabs
