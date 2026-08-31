@@ -137,9 +137,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   textArea: {
-    height: 96,
-    textAlignVertical: 'top',
-    paddingTop: spacing.sm,
+    minHeight: 88,
   },
   submitBtn: {
     marginTop: spacing.md,

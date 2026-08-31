@@ -27,7 +27,7 @@ export default function HomeScreen() {
 
   const handleCategorySelect = (category: ServiceCategory) => {
     router.push({
-      pathname: '/services/service-details' as any,
+      pathname: '/services/categories' as any,
       params: { categoryId: category.id, categoryName: category.name },
     });
   };

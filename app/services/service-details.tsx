@@ -18,10 +18,17 @@ import { ServiceOption as OptionType } from '@/types/service';
 export default function ServiceDetailsScreen() {
   const router = useRouter();
   const { updateBooking } = useBooking();
-  const { categoryId } = useLocalSearchParams<{ categoryId?: string }>();
+  const { categoryId, productName, brandName } = useLocalSearchParams<{
+    categoryId?: string;
+    productName?: string;
+    brandName?: string;
+  }>();
 
-  const serviceDetail = services.find((s) => s.categoryId === categoryId) || services[0];
-  const [selectedOption, setSelectedOption] = useState<OptionType>(serviceDetail.options[0]);
+  const serviceDetail =
+    services.find((s) => s.categoryId === categoryId) || services[0];
+  const [selectedOption, setSelectedOption] = useState<OptionType>(
+    serviceDetail.options[0]
+  );
 
   const handleSelectOption = (option: OptionType) => {
     setSelectedOption(option);
@@ -30,17 +37,30 @@ export default function ServiceDetailsScreen() {
       serviceTitle: serviceDetail.title,
       selectedOption: option,
       categoryName: serviceDetail.title,
+      productName: productName || serviceDetail.title,
+      brandName: brandName || '',
     });
     router.push('/services/schedule' as any);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <Header title={serviceDetail.title} subtitle={`★ ${serviceDetail.rating} (${serviceDetail.reviewCount} reviews)`} />
+      <Header
+        title={serviceDetail.title}
+        subtitle={`★ ${serviceDetail.rating} (${serviceDetail.reviewCount} reviews)`}
+      />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {productName && (
+          <View style={styles.contextBadge}>
+            <Text style={styles.contextText}>
+              Selected for: <Text style={styles.contextBold}>{brandName ? `${brandName} ${productName}` : productName}</Text>
+            </Text>
+          </View>
+        )}
+
         <Text style={styles.subtitle}>{serviceDetail.subtitle}</Text>
 
-        <SectionHeader title="Available Packages" />
+        <SectionHeader title="Available Service Packages" />
         {serviceDetail.options.map((opt) => (
           <ServiceOption
             key={opt.id}
@@ -67,6 +87,20 @@ const styles = StyleSheet.create({
   container: {
     padding: spacing.md,
     paddingBottom: spacing.xl,
+  },
+  contextBadge: {
+    backgroundColor: colors.primaryLight,
+    paddingVertical: spacing.xs + 2,
+    paddingHorizontal: spacing.sm + 2,
+    borderRadius: spacing.radiusSm,
+    marginBottom: spacing.xs,
+  },
+  contextText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primaryDark,
+  },
+  contextBold: {
+    fontWeight: typography.fontWeight.bold,
   },
   subtitle: {
     fontSize: typography.fontSize.sm,

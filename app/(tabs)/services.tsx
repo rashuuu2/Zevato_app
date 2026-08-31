@@ -5,8 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Input from '@/components/common/Input';
 import CategoryCard from '@/components/services/CategoryCard';
-import SectionHeader from '@/components/common/SectionHeader';
 import BrandCard from '@/components/services/BrandCard';
+import SectionHeader from '@/components/common/SectionHeader';
+import EmptyState from '@/components/common/EmptyState';
 
 import categories from '@/data/categories';
 import brands from '@/data/brands';
@@ -26,14 +27,14 @@ export default function ServicesScreen() {
 
   const handleSelectCategory = (category: ServiceCategory) => {
     router.push({
-      pathname: '/services/service-details' as any,
+      pathname: '/services/categories' as any,
       params: { categoryId: category.id, categoryName: category.name },
     });
   };
 
   const handleSelectBrand = (brand: Brand) => {
     router.push({
-      pathname: '/services/products' as any,
+      pathname: '/services/brands' as any,
       params: { brandId: brand.id, brandName: brand.name },
     });
   };
@@ -43,7 +44,7 @@ export default function ServicesScreen() {
       <View style={styles.container}>
         <Text style={styles.pageTitle}>Service Catalog</Text>
         <Input
-          placeholder="Search for AC, Washing Machine, RO service..."
+          placeholder="Search AC, Washing Machine, RO..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           leftIcon={<Ionicons name="search" size={20} color={colors.textSecondary} />}
@@ -56,9 +57,13 @@ export default function ServicesScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={() => (
             <>
-              <SectionHeader title="Popular Appliance Brands" />
+              <SectionHeader
+                title="Popular Appliance Brands"
+                actionTitle="View All"
+                onAction={() => router.push('/services/brands' as any)}
+              />
               <View style={styles.brandsRow}>
-                {brands.map((b) => (
+                {brands.slice(0, 6).map((b) => (
                   <BrandCard key={b.id} brand={b} onPress={handleSelectBrand} />
                 ))}
               </View>
@@ -68,6 +73,13 @@ export default function ServicesScreen() {
           renderItem={({ item }) => (
             <CategoryCard category={item} onPress={handleSelectCategory} />
           )}
+          ListEmptyComponent={
+            <EmptyState
+              icon="search-outline"
+              title="No categories found"
+              description={`No service categories match "${searchQuery}". Try a different keyword.`}
+            />
+          }
           contentContainerStyle={styles.listContent}
         />
       </View>

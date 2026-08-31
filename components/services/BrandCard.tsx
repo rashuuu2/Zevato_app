@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Brand } from '@/types/service';
 import { colors } from '@/constants/colors';
@@ -19,7 +19,7 @@ export const BrandCard: React.FC<BrandCardProps> = ({ brand, selected, onPress }
       onPress={() => onPress(brand)}
       activeOpacity={0.7}
     >
-      <Ionicons name={brand.logo as any} size={24} color={selected ? colors.primary : colors.textSecondary} />
+      <Ionicons name={(brand.logo as any) || 'hardware-chip-outline'} size={24} color={selected ? colors.primary : colors.textSecondary} />
       <Text style={[styles.name, selected && styles.selectedText]}>{brand.name}</Text>
     </TouchableOpacity>
   );

@@ -26,19 +26,35 @@ export const Input: React.FC<InputProps> = ({
   rightIcon,
   containerStyle,
   style,
+  multiline,
   ...rest
 }) => {
   return (
     <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <View style={[styles.inputWrapper, error ? styles.errorBorder : null]}>
-        {leftIcon && <View style={styles.iconLeft}>{leftIcon}</View>}
+      <View
+        style={[
+          styles.inputWrapper,
+          multiline ? styles.multilineWrapper : null,
+          error ? styles.errorBorder : null,
+        ]}
+      >
+        {leftIcon && (
+          <View style={[styles.iconLeft, multiline ? styles.multilineIcon : null]}>
+            {leftIcon}
+          </View>
+        )}
         <TextInput
-          style={[styles.input, style]}
+          style={[styles.input, multiline ? styles.multilineInput : null, style]}
           placeholderTextColor={colors.textMuted}
+          multiline={multiline}
           {...rest}
         />
-        {rightIcon && <View style={styles.iconRight}>{rightIcon}</View>}
+        {rightIcon && (
+          <View style={[styles.iconRight, multiline ? styles.multilineIcon : null]}>
+            {rightIcon}
+          </View>
+        )}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -63,7 +79,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: spacing.radiusMd,
     paddingHorizontal: spacing.md,
-    height: 48,
+    minHeight: 48,
+  },
+  multilineWrapper: {
+    alignItems: 'flex-start',
+    paddingVertical: spacing.sm,
+    minHeight: 110,
   },
   errorBorder: {
     borderColor: colors.danger,
@@ -74,11 +95,19 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.md,
     paddingVertical: 0,
   },
+  multilineInput: {
+    textAlignVertical: 'top',
+    paddingTop: 0,
+    minHeight: 88,
+  },
   iconLeft: {
     marginRight: spacing.sm,
   },
   iconRight: {
     marginLeft: spacing.sm,
+  },
+  multilineIcon: {
+    marginTop: spacing.xs,
   },
   errorText: {
     color: colors.danger,

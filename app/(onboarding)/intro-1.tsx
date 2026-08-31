@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '@/components/common/Button';
+import BackButton from '@/components/common/BackButton';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
@@ -13,6 +14,7 @@ export default function Intro1Screen() {
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
+        <BackButton />
         <Text style={styles.stepText}>Step 1 of 3</Text>
       </View>
 
@@ -57,7 +59,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   topRow: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   stepText: {
     fontSize: typography.fontSize.xs,
