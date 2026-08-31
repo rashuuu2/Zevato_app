@@ -11,21 +11,9 @@ import { typography } from '@/constants/typography';
 
 export default function AccountCreatedScreen() {
   const router = useRouter();
-  const { setAuth } = useAuth();
+  const { user } = useAuth();
 
   const handleGoHome = () => {
-    setAuth({
-      isAuthenticated: true,
-      user: {
-        id: `user-${Date.now()}`,
-        name: 'New Member',
-        email: 'member@zevotacare.com',
-        phone: '+91 98765 00000',
-        addresses: [],
-        paymentMethods: [],
-      },
-      token: 'new-account-token',
-    });
     router.replace('/(tabs)/home' as any);
   };
 
@@ -37,7 +25,7 @@ export default function AccountCreatedScreen() {
         </View>
         <Text style={styles.title}>Account Created!</Text>
         <Text style={styles.subtitle}>
-          Welcome to Zevota Care. Your account is active and ready for your first appliance booking.
+          Welcome to Zevota Care, {user?.name || 'Customer'}! Your account is active and ready for your first appliance protection plan or service booking.
         </Text>
 
         <Button

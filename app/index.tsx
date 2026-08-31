@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import useAuth from '@/hooks/useAuth';
 import { colors } from '@/constants/colors';
 import { config } from '@/constants/config';
 import { typography } from '@/constants/typography';
@@ -10,36 +11,47 @@ import { spacing } from '@/constants/spacing';
 
 export default function SplashScreen() {
   const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
 
-    const checkOnboardingState = async () => {
+    const checkAppInitialRoute = async () => {
+      // Wait until Clerk auth state is initialized
+      if (!isLoaded) return;
+
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const hasCompleted = await AsyncStorage.getItem(config.storageKeys.onboardingCompleted);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const hasCompletedOnboarding = await AsyncStorage.getItem(
+          config.storageKeys.onboardingCompleted
+        );
 
         if (!isMounted) return;
 
-        if (hasCompleted === 'true') {
+        if (hasCompletedOnboarding !== 'true') {
+          // First launch: Intro Onboarding flow
+          router.replace('/(onboarding)/welcome' as any);
+        } else if (isSignedIn) {
+          // Returning authenticated user: Home dashboard
           router.replace('/(tabs)/home' as any);
         } else {
-          router.replace('/(onboarding)/welcome' as any);
+          // Returning unauthenticated user: Sign In screen
+          router.replace('/(auth)/login' as any);
         }
       } catch (error) {
-        console.error('Error checking onboarding state:', error);
+        console.error('Error during initial routing check:', error);
         if (isMounted) {
           router.replace('/(onboarding)/welcome' as any);
         }
       }
     };
 
-    checkOnboardingState();
+    checkAppInitialRoute();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   return (
     <View style={styles.container}>

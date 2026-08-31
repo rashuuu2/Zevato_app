@@ -16,17 +16,24 @@ import { spacing } from '@/constants/spacing';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, setAuth } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    Alert.alert('Sign Out', 'Are you sure you want to sign out of your Zevota account?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: () => {
-          setAuth({ isAuthenticated: false, user: null, token: null });
-          router.replace('/(auth)/login' as any);
+        onPress: async () => {
+          try {
+            if (signOut) {
+              await signOut();
+            }
+          } catch (e) {
+            console.error('Error signing out:', e);
+          } finally {
+            router.replace('/(auth)/login' as any);
+          }
         },
       },
     ]);
@@ -70,7 +77,7 @@ export default function ProfileScreen() {
           icon="location-outline"
           title="Saved Addresses"
           subtitle="Home, office & alternate locations"
-          badge={`${user.addresses.length}`}
+          badge={`${user.addresses?.length || 0}`}
           onPress={() => router.push('/profile/addresses' as any)}
         />
         <ProfileMenuItem

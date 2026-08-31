@@ -1,10 +1,20 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import useAuth from '@/hooks/useAuth';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 
 export default function TabsLayout() {
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.replace('/(auth)/login' as any);
+    }
+  }, [isLoaded, isSignedIn]);
+
   return (
     <Tabs
       screenOptions={{

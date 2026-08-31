@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 import Header from '@/components/common/Header';
+import { userStore } from '@/store/userStore';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
@@ -13,20 +14,46 @@ import { typography } from '@/constants/typography';
 export default function CompleteProfileScreen() {
   const router = useRouter();
 
+  const [phone, setPhone] = useState('+91 ');
   const [street, setStreet] = useState('');
-  const [city, setCity] = useState('');
+  const [city, setCity] = useState('Bengaluru');
   const [zipCode, setZipCode] = useState('');
 
   const handleNext = () => {
-    router.push('/(auth)/set-password' as any);
+    if (phone.trim()) {
+      userStore.updateProfile({ phone: phone.trim() });
+    }
+    if (street.trim()) {
+      userStore.addAddress({
+        id: `addr-${Date.now()}`,
+        title: 'Home',
+        street: street.trim(),
+        city: city.trim() || 'Bengaluru',
+        state: 'Karnataka',
+        zipCode: zipCode.trim() || '560102',
+        isDefault: true,
+        type: 'home',
+      });
+    }
+
+    router.replace('/(auth)/account-created' as any);
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header title="Complete Profile" />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Primary Address</Text>
-        <Text style={styles.subtitle}>Where should our certified technicians perform your services?</Text>
+        <Text style={styles.title}>Primary Service Address</Text>
+        <Text style={styles.subtitle}>Where should our certified technicians perform your appliance services?</Text>
+
+        <Input
+          label="Phone Number"
+          placeholder="e.g. +91 98765 43210"
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+          leftIcon={<Ionicons name="call-outline" size={20} color={colors.textSecondary} />}
+        />
 
         <Input
           label="House / Flat / Street Address"
@@ -54,7 +81,7 @@ export default function CompleteProfileScreen() {
         />
 
         <Button
-          title="Continue to Set Password"
+          title="Save Address & Continue"
           variant="primary"
           size="large"
           onPress={handleNext}

@@ -7,12 +7,13 @@ import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 
 import useAuth from '@/hooks/useAuth';
+import { userStore } from '@/store/userStore';
 import { userService } from '@/services/users';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 
 export default function PersonalInfoScreen() {
-  const { user, setAuth } = useAuth();
+  const { user } = useAuth();
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -23,7 +24,7 @@ export default function PersonalInfoScreen() {
     try {
       setLoading(true);
       const updated = await userService.updateProfile({ name, email, phone });
-      setAuth({ user: updated });
+      userStore.updateProfile(updated);
       setLoading(false);
       Alert.alert('Profile Updated', 'Your personal details have been updated successfully.');
     } catch (e) {

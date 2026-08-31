@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import Button from '@/components/common/Button';
 import BackButton from '@/components/common/BackButton';
+import useAuth from '@/hooks/useAuth';
 import { colors } from '@/constants/colors';
 import { config } from '@/constants/config';
 import { spacing } from '@/constants/spacing';
@@ -12,16 +13,21 @@ import { typography } from '@/constants/typography';
 
 export default function Intro3Screen() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const handleFinishOnboarding = async () => {
     try {
       setLoading(true);
       await AsyncStorage.setItem(config.storageKeys.onboardingCompleted, 'true');
-      router.replace('/(tabs)/home' as any);
+      if (isSignedIn) {
+        router.replace('/(tabs)/home' as any);
+      } else {
+        router.replace('/(auth)/login' as any);
+      }
     } catch (error) {
       console.error('Failed to set onboarding completion state:', error);
-      router.replace('/(tabs)/home' as any);
+      router.replace('/(auth)/login' as any);
     } finally {
       setLoading(false);
     }
@@ -55,7 +61,7 @@ export default function Intro3Screen() {
 
       <View style={styles.footer}>
         <Button
-          title="Explore Home"
+          title="Get Started / Sign In"
           variant="primary"
           size="large"
           loading={loading}

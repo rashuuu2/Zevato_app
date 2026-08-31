@@ -1,8 +1,18 @@
-import React from 'react';
-import { Stack } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import useAuth from '@/hooks/useAuth';
 import { colors } from '@/constants/colors';
 
 export default function AuthLayout() {
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      router.replace('/(tabs)/home' as any);
+    }
+  }, [isLoaded, isSignedIn]);
+
   return (
     <Stack
       screenOptions={{
