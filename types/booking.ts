@@ -56,6 +56,8 @@ export interface Booking {
   productId?: string;
   productName?: string;
   status: BookingStatus;
+  paymentStatus?: 'payment_pending' | 'payment_processing' | 'payment_paid' | 'payment_failed' | 'payment_cancelled' | string;
+  simulatedTransactionId?: string;
   scheduledDate: string;
   scheduledTimeSlot: string;
   address: Address;

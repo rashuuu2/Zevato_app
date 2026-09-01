@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import useAuth from '@/hooks/useAuth';
@@ -29,13 +30,14 @@ export default function TabsLayout() {
           backgroundColor: colors.white,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: 60,
+          height: 64,
           paddingBottom: 8,
           paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: typography.fontSize.xs - 1,
-          fontWeight: typography.fontWeight.medium,
+          fontSize: 10,
+          fontWeight: typography.fontWeight.semibold,
+          marginTop: 2,
         },
       }}
     >
@@ -60,18 +62,26 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="request"
         options={{
-          title: 'New Request',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} size={24} color={color} />
+          title: 'Request',
+          tabBarButton: () => (
+            <TouchableOpacity
+              style={styles.floatingCenterBtnWrapper}
+              activeOpacity={0.85}
+              onPress={() => router.push('/request' as any)}
+            >
+              <View style={styles.floatingCenterBtn}>
+                <Ionicons name="add" size={30} color={colors.white} />
+              </View>
+            </TouchableOpacity>
           ),
         }}
       />
       <Tabs.Screen
         name="requests"
         options={{
-          title: 'My Bookings',
+          title: 'Requests',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={22} color={color} />
+            <Ionicons name={focused ? 'receipt' : 'receipt-outline'} size={22} color={color} />
           ),
         }}
       />
@@ -87,3 +97,27 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  floatingCenterBtnWrapper: {
+    top: -14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
+  },
+  floatingCenterBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 3,
+    borderColor: colors.white,
+  },
+});
