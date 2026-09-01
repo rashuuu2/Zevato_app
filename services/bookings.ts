@@ -49,7 +49,6 @@ export const bookingService = {
 
       const created = await api.post<Booking>('/bookings', payload);
       if (created && created.id) {
-        // Also add to local in-memory array as backup
         mockBookings.unshift(created);
         return created;
       }
@@ -57,7 +56,6 @@ export const bookingService = {
       console.warn('bookingService.createBooking falling back to client generation:', e);
     }
 
-    // Local fallback if backend unavailable
     const randomNum = Math.floor(10000 + Math.random() * 90000);
     const newBookingId = `ZEV-2026-${randomNum}`;
 
@@ -121,9 +119,31 @@ export const bookingService = {
     return newBooking;
   },
 
+  processFakePayment: async (
+    bookingId: string,
+    simulateOutcome: 'success' | 'failed' | 'cancelled' = 'success',
+    paymentMethodType?: string
+  ): Promise<any> => {
+    try {
+      const response = await api.post('/payments/process-fake', {
+        bookingId,
+        simulateOutcome,
+        paymentMethodType,
+      });
+      return response;
+    } catch (e: any) {
+      console.warn('bookingService.processFakePayment fallback:', e);
+      return {
+        success: simulateOutcome === 'success',
+        paymentStatus: simulateOutcome === 'success' ? 'payment_paid' : 'payment_failed',
+        simulatedTransactionId: `SIM-TXN-${Date.now()}`,
+      };
+    }
+  },
+
   updateBookingStatus: async (id: string, status: BookingStatus): Promise<Booking | undefined> => {
     try {
-      const updated = await api.patch<Booking>(`/bookings/${id}`, { status });
+      const updated = await api.patch<Booking>(`/bookings/${id}/status`, { status });
       if (updated) return updated;
     } catch (e) {
       console.warn(`bookingService.updateBookingStatus(${id}) fallback:`, e);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,6 +23,7 @@ export default function PaymentScreen() {
   const { user } = useAuth();
   const { draft, resetBooking } = useBooking();
   const [loading, setLoading] = useState(false);
+  const [simulateFailure, setSimulateFailure] = useState(false);
 
   const paymentOptions: PaymentMethod[] = [
     { id: 'p-1', type: 'upi', title: 'Google Pay / PhonePe (UPI)', details: 'Instant confirmation & 100% money back guarantee', isDefault: true },
@@ -35,7 +36,6 @@ export default function PaymentScreen() {
   );
 
   const handleConfirm = async () => {
-    // Payment Validation
     if (!draft.selectedOption && !draft.serviceTitle) {
       Alert.alert('Incomplete Booking', 'Please select a service package first.');
       return;
@@ -51,11 +51,6 @@ export default function PaymentScreen() {
       return;
     }
 
-    if (!selectedPayment) {
-      Alert.alert('Select Payment', 'Please select a payment method.');
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -65,6 +60,7 @@ export default function PaymentScreen() {
       const tax = Math.round(taxable * 0.18);
       const finalTotal = taxable + tax;
 
+      // 1. Create booking on backend
       const created = await bookingService.createBooking({
         serviceId: draft.serviceId || 'ac-jet-service',
         serviceTitle: draft.serviceTitle || 'Appliance Care Service',
@@ -86,16 +82,34 @@ export default function PaymentScreen() {
         totalAmount: finalTotal,
       });
 
-      resetBooking();
+      // 2. Authoritative Simulated Payment Engine Processing
+      const outcome = simulateFailure ? 'failed' : 'success';
+      const paymentResult = await bookingService.processFakePayment(
+        created.id,
+        outcome,
+        selectedPayment.type
+      );
+
       setLoading(false);
+
+      if (simulateFailure || !paymentResult.success) {
+        Alert.alert(
+          'Simulated Payment Failed',
+          'Payment processing failed (Development Test Mode). You can switch the failure toggle off to test successful payment.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      resetBooking();
 
       router.replace({
         pathname: '/services/booking-confirmed' as any,
         params: { id: created.id },
       });
-    } catch (error) {
+    } catch (error: any) {
       setLoading(false);
-      Alert.alert('Booking Error', 'Failed to process your booking. Please try again.');
+      Alert.alert('Booking Error', error.message || 'Failed to process your booking.');
     }
   };
 
@@ -104,6 +118,14 @@ export default function PaymentScreen() {
       <Header title="Payment & Review" />
       <BookingStepper currentStep={3} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Simulated Dev Payment Notice */}
+        <View style={styles.devNoticeCard}>
+          <Ionicons name="information-circle-outline" size={20} color={colors.primary} />
+          <Text style={styles.devNoticeText}>
+            Development Demo Mode: Payments are simulated. No real financial transaction will occur.
+          </Text>
+        </View>
+
         {/* Booking Summary Context Card */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Booking Summary</Text>
@@ -185,8 +207,22 @@ export default function PaymentScreen() {
           );
         })}
 
+        {/* Dev Payment Failure Simulation Toggle */}
+        <View style={styles.testControlCard}>
+          <View style={styles.testTextGroup}>
+            <Text style={styles.testTitle}>Simulate Payment Failure (Dev Test)</Text>
+            <Text style={styles.testSub}>Toggle to test payment failure response</Text>
+          </View>
+          <Switch
+            value={simulateFailure}
+            onValueChange={setSimulateFailure}
+            trackColor={{ false: colors.border, true: colors.dangerLight }}
+            thumbColor={simulateFailure ? colors.danger : '#f4f3f4'}
+          />
+        </View>
+
         <Button
-          title="Confirm Booking"
+          title={loading ? 'Processing Payment...' : 'Pay & Confirm Booking'}
           variant="primary"
           size="large"
           loading={loading}
@@ -206,6 +242,21 @@ const styles = StyleSheet.create({
   container: {
     padding: spacing.md,
     paddingBottom: spacing.xl,
+  },
+  devNoticeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    padding: spacing.sm,
+    borderRadius: spacing.radiusMd,
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  devNoticeText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primary,
+    fontWeight: typography.fontWeight.semibold,
+    flex: 1,
   },
   summaryCard: {
     backgroundColor: colors.surface,
@@ -276,7 +327,33 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+  testControlCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    padding: spacing.sm + 2,
+    borderRadius: spacing.radiusMd,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  testTextGroup: {
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  testTitle: {
+    fontSize: typography.fontSize.xs + 1,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+  },
+  testSub: {
+    fontSize: typography.fontSize.xs - 1,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
   btn: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
 });

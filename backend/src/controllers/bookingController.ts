@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middleware/auth';
 import prisma from '../db';
+import { broadcastToUser } from '../socket';
+import { sendPushNotificationToUser } from '../services/notificationService';
 
 export const getBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
@@ -105,7 +107,6 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
       return;
     }
 
-    // Verify service option and compute authoritative total server-side
     const option = await prisma.serviceOption.findUnique({
       where: { id: serviceOptionId },
       include: { service: true },
@@ -116,13 +117,11 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
       return;
     }
 
-    // Verify or fetch address
     let address = await prisma.address.findFirst({
       where: { id: addressId, userId },
     });
 
     if (!address) {
-      // If client passed raw address or address not found in user DB, get default or create
       const userAddresses = await prisma.address.findMany({ where: { userId } });
       if (userAddresses.length > 0) {
         address = userAddresses[0];
@@ -141,7 +140,6 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
       }
     }
 
-    // Assign available technician from DB
     const technician = await prisma.technician.findFirst({
       where: { availability: 'available' },
     });
@@ -170,7 +168,7 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
         paymentMethodType: paymentMethod?.type || 'upi',
         paymentMethodTitle: paymentMethod?.title || 'Google Pay (UPI)',
         paymentMethodDetails: paymentMethod?.details || 'Instant confirmation',
-        paymentStatus: 'paid',
+        paymentStatus: 'payment_pending',
         bookingStatus: 'scheduled',
         subtotal,
         discount,
@@ -226,10 +224,92 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
       },
     });
 
-    res.status(201).json(formatBookingResponse(newBooking));
+    const response = formatBookingResponse(newBooking);
+
+    broadcastToUser(userId, 'booking:created', response);
+
+    res.status(201).json(response);
+    return;
   } catch (error) {
     console.error('createBooking error:', error);
     res.status(500).json({ error: 'Failed to create booking' });
+  }
+};
+
+export const updateBookingStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const existing = await prisma.booking.findFirst({
+      where: { id, userId },
+      include: { statusHistory: true },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    let isCompleted = status === 'completed';
+
+    if (isCompleted) {
+      await prisma.bookingStatusHistory.updateMany({
+        where: { bookingId: id },
+        data: { completed: true },
+      });
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        bookingStatus: status,
+        ...(isCompleted && { paymentStatus: 'payment_paid' }),
+      },
+      include: {
+        service: true,
+        serviceOption: true,
+        address: true,
+        technician: true,
+        statusHistory: { orderBy: { stepNumber: 'asc' } },
+        invoice: true,
+        serviceReport: true,
+      },
+    });
+
+    const response = formatBookingResponse(updated);
+
+    broadcastToUser(userId, 'booking:status_updated', {
+      bookingId: updated.id,
+      status: updated.bookingStatus,
+      paymentStatus: updated.paymentStatus,
+    });
+
+    if (isCompleted) {
+      broadcastToUser(userId, 'booking:completed', response);
+      await sendPushNotificationToUser(
+        userId,
+        'Service Completed! 🎉',
+        `Your service for ${updated.service?.title || 'Appliance'} is completed. View report and tax invoice now.`
+      );
+    } else if (status === 'in_progress') {
+      await sendPushNotificationToUser(
+        userId,
+        'Service Started 🛠️',
+        `Technician ${updated.technician?.name || ''} has started your service.`
+      );
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('updateBookingStatus error:', error);
+    res.status(500).json({ error: 'Failed to update booking status' });
   }
 };
 
@@ -264,7 +344,7 @@ export const cancelBooking = async (req: AuthenticatedRequest, res: Response): P
       data: {
         bookingStatus: 'cancelled',
         cancellationReason: reason || 'User requested cancellation',
-        paymentStatus: 'refunded',
+        paymentStatus: 'payment_cancelled',
         statusHistory: {
           create: {
             stepNumber: (booking.statusHistory.length || 0) + 1,
@@ -285,7 +365,20 @@ export const cancelBooking = async (req: AuthenticatedRequest, res: Response): P
       },
     });
 
-    res.json(formatBookingResponse(updated));
+    const response = formatBookingResponse(updated);
+
+    broadcastToUser(userId, 'booking:cancelled', {
+      bookingId: booking.id,
+      reason,
+    });
+
+    await sendPushNotificationToUser(
+      userId,
+      'Booking Cancelled',
+      `Booking ${booking.bookingNumber} has been cancelled successfully.`
+    );
+
+    res.json(response);
   } catch (error) {
     console.error('cancelBooking error:', error);
     res.status(500).json({ error: 'Failed to cancel booking' });
@@ -318,6 +411,7 @@ export const getBookingStatus = async (req: AuthenticatedRequest, res: Response)
     res.json({
       bookingId: booking.id,
       status: booking.bookingStatus,
+      paymentStatus: booking.paymentStatus,
       technician: booking.technician,
       steps: booking.statusHistory.map((s) => ({
         id: s.id,
@@ -449,6 +543,9 @@ function formatBookingResponse(b: any) {
     brandName: b.brand?.name,
     productName: b.product?.name,
     status: b.bookingStatus,
+    paymentStatus: b.paymentStatus,
+    simulatedTransactionId: b.simulatedTransactionId,
+    paidAt: b.paidAt ? b.paidAt.toISOString() : undefined,
     scheduledDate: b.scheduledDate,
     scheduledTimeSlot: b.scheduledTimeSlot,
     address: b.address
@@ -479,6 +576,8 @@ function formatBookingResponse(b: any) {
           rating: b.technician.rating,
           completedJobs: b.technician.completedJobs,
           avatarUrl: b.technician.avatarUrl,
+          latitude: b.technician.currentLat,
+          longitude: b.technician.currentLng,
         }
       : undefined,
     steps: b.statusHistory

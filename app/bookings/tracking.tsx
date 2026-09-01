@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,19 +11,88 @@ import BookingProgress from '@/components/tracking/BookingProgress';
 import Button from '@/components/common/Button';
 import EmptyState from '@/components/common/EmptyState';
 
+import useAuth from '@/hooks/useAuth';
 import { bookingService } from '@/services/bookings';
-import bookings from '@/data/bookings';
+import { initSocketClient } from '@/services/socket';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
-import { BookingStatus } from '@/types/booking';
+import { Booking, BookingStatus } from '@/types/booking';
 
 export default function TrackingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const [booking, setBooking] = useState(
-    bookings.find((b) => b.id === id) || bookings[0]
-  );
+  const { userId } = useAuth();
+
+  const [booking, setBooking] = useState<Booking | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
+  const [eta, setEta] = useState('12 mins');
+  const [distance, setDistance] = useState('2.4 km away');
+
+  useEffect(() => {
+    const fetchBooking = async () => {
+      if (id) {
+        const found = await bookingService.getBookingById(id);
+        setBooking(found);
+      }
+      setLoading(false);
+    };
+
+    fetchBooking();
+
+    // Connect to WebSocket server for real-time tracking updates
+    if (userId && id) {
+      const activeUserId = userId;
+      const bookingIdParam = id;
+      const socket = initSocketClient(activeUserId);
+
+      const handleStatusUpdate = async (data: any) => {
+        if (data.bookingId === bookingIdParam) {
+          const reloaded = await bookingService.getBookingById(bookingIdParam);
+          if (reloaded) setBooking(reloaded);
+        }
+      };
+
+      const handleLocationUpdate = (data: any) => {
+        if (data.bookingId === bookingIdParam) {
+          setEta('8 mins');
+          setDistance('1.2 km away');
+          setBooking((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              technician: prev.technician
+                ? {
+                    ...prev.technician,
+                    latitude: data.currentLat,
+                    longitude: data.currentLng,
+                  }
+                : undefined,
+            };
+          });
+        }
+      };
+
+      socket.on('booking:status_updated', handleStatusUpdate);
+      socket.on('technician:location_updated', handleLocationUpdate);
+
+      return () => {
+        socket.off('booking:status_updated', handleStatusUpdate);
+        socket.off('technician:location_updated', handleLocationUpdate);
+      };
+    }
+  }, [id, userId]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <Header title="Live Tracking" />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!booking) {
     return (
@@ -44,7 +113,6 @@ export default function TrackingScreen() {
     Alert.alert('Calling Technician', `Dialing ${booking.technician?.name || 'Technician'} at ${booking.technician?.phone}...`);
   };
 
-  // Mock status advancement for demo testing
   const handleSimulateStatusNext = async () => {
     let nextStatus: BookingStatus = 'in_progress';
     if (booking.status === 'scheduled' || booking.status === 'technician_assigned') {
@@ -57,9 +125,9 @@ export default function TrackingScreen() {
     if (updated) {
       setBooking({ ...updated });
       if (nextStatus === 'completed') {
-        Alert.alert('Service Completed', 'Technician has completed the service! Redirecting to Service Report...', [
+        Alert.alert('Service Completed 🎉', 'Technician has completed the service! View your service report & invoice now.', [
           {
-            text: 'View Report',
+            text: 'View Service Report',
             onPress: () => router.replace({ pathname: '/bookings/completed' as any, params: { id: booking.id } }),
           },
         ]);
@@ -74,7 +142,7 @@ export default function TrackingScreen() {
       <Header title={`Live Tracking ${booking.id}`} />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Tracking Map Component */}
-        <TrackingMap eta="14 mins" distance="2.8 km away" />
+        <TrackingMap eta={eta} distance={distance} />
 
         {/* Technician Info */}
         {booking.technician && (
@@ -87,9 +155,9 @@ export default function TrackingScreen() {
           {booking.steps && <BookingProgress steps={booking.steps} />}
         </View>
 
-        {/* Demo Simulation Controls */}
+        {/* Development Progress Controls */}
         <View style={styles.demoControlBox}>
-          <Text style={styles.demoControlTitle}>Service Progress Controls</Text>
+          <Text style={styles.demoControlTitle}>Development Service Simulation</Text>
           <TouchableOpacity
             style={styles.demoBtn}
             onPress={handleSimulateStatusNext}
@@ -100,8 +168,8 @@ export default function TrackingScreen() {
               {booking.status === 'completed'
                 ? 'Service Already Completed'
                 : booking.status === 'in_progress'
-                ? 'Simulate Finish Service'
-                : 'Simulate Start Service'}
+                ? 'Simulate Service Completion'
+                : 'Simulate Service Execution'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -133,6 +201,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   container: {
     padding: spacing.md,

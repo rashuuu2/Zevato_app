@@ -21,6 +21,17 @@ model User {
   addresses        Address[]
   bookings         Booking[]
   invoices         Invoice[]
+  pushTokens       PushToken[]
+}
+
+model PushToken {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expoPushToken  String   @unique
+  deviceName     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Address {
@@ -133,44 +144,46 @@ model Technician {
 }
 
 model Booking {
-  id                   String                 @id @default(uuid())
-  bookingNumber        String                 @unique
-  userId               String
-  user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  serviceId            String
-  service              Service                @relation(fields: [serviceId], references: [id])
-  serviceOptionId      String
-  serviceOption        ServiceOption          @relation(fields: [serviceOptionId], references: [id])
-  categoryId           String?
-  category             Category?              @relation(fields: [categoryId], references: [id])
-  brandId              String?
-  brand                Brand?                 @relation(fields: [brandId], references: [id])
-  productId            String?
-  product              Product?               @relation(fields: [productId], references: [id])
-  addressId            String
-  address              Address                @relation(fields: [addressId], references: [id])
-  technicianId         String?
-  technician           Technician?            @relation(fields: [technicianId], references: [id])
+  id                     String                 @id @default(uuid())
+  bookingNumber          String                 @unique
+  userId                 String
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId              String
+  service                Service                @relation(fields: [serviceId], references: [id])
+  serviceOptionId        String
+  serviceOption          ServiceOption          @relation(fields: [serviceOptionId], references: [id])
+  categoryId             String?
+  category               Category?              @relation(fields: [categoryId], references: [id])
+  brandId                String?
+  brand                  Brand?                 @relation(fields: [brandId], references: [id])
+  productId              String?
+  product                Product?               @relation(fields: [productId], references: [id])
+  addressId              String
+  address                Address                @relation(fields: [addressId], references: [id])
+  technicianId           String?
+  technician             Technician?            @relation(fields: [technicianId], references: [id])
 
-  scheduledDate        String
-  scheduledTimeSlot    String
-  paymentMethodType    String                 @default("upi")
-  paymentMethodTitle   String                 @default("Google Pay (UPI)")
-  paymentMethodDetails String?                @default("Instant confirmation")
-  paymentStatus        String                 @default("paid") // pending, paid, refunded
-  bookingStatus        String                 @default("scheduled") // scheduled, technician_assigned, in_progress, completed, cancelled
-  cancellationReason   String?
+  scheduledDate          String
+  scheduledTimeSlot      String
+  paymentMethodType      String                 @default("upi")
+  paymentMethodTitle     String                 @default("Google Pay (UPI)")
+  paymentMethodDetails   String?                @default("Instant confirmation")
+  paymentStatus          String                 @default("payment_pending") // payment_pending, payment_processing, payment_paid, payment_failed, payment_cancelled
+  simulatedTransactionId String?
+  paidAt                 DateTime?
+  bookingStatus          String                 @default("scheduled") // scheduled, technician_assigned, in_progress, completed, cancelled
+  cancellationReason     String?
 
-  subtotal             Float
-  discount             Float                  @default(0)
-  tax                  Float                  @default(0)
-  total                Float
-  createdAt            DateTime               @default(now())
-  updatedAt            DateTime               @updatedAt
+  subtotal               Float
+  discount               Float                  @default(0)
+  tax                    Float                  @default(0)
+  total                  Float
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
 
-  statusHistory        BookingStatusHistory[]
-  serviceReport        ServiceReport?
-  invoice              Invoice?
+  statusHistory          BookingStatusHistory[]
+  serviceReport          ServiceReport?
+  invoice                Invoice?
 }
 
 model BookingStatusHistory {
