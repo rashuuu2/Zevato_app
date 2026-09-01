@@ -103,7 +103,7 @@ export default function TrackingScreen() {
           title="Tracking Unavailable"
           description="We couldn't find an active tracking session for this booking."
           actionTitle="Back to My Bookings"
-          onAction={() => router.replace('/(tabs)/requests' as any)}
+          onAction={() => router.replace('/requests' as any)}
         />
       </SafeAreaView>
     );

@@ -44,7 +44,7 @@ export default function BookingDetailScreen() {
           title="Booking Not Found"
           description={`We couldn't find a booking record for ID "${id}".`}
           actionTitle="Back to My Bookings"
-          onAction={() => router.replace('/(tabs)/requests' as any)}
+          onAction={() => router.replace('/requests' as any)}
         />
       </SafeAreaView>
     );

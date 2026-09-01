@@ -101,7 +101,7 @@ export default function CompletedBookingScreen() {
           title="Back to My Bookings"
           variant="ghost"
           size="medium"
-          onPress={() => router.replace('/(tabs)/requests' as any)}
+          onPress={() => router.replace('/requests' as any)}
           style={styles.homeBtn}
         />
       </ScrollView>

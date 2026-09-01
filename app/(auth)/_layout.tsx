@@ -13,7 +13,7 @@ export default function AuthLayout() {
 
     if (isSignedIn) {
       if (user?.profileCompleted) {
-        router.replace('/(tabs)/home' as any);
+        router.replace('/home' as any);
       } else {
         const currentRoute = segments[segments.length - 1];
         if (currentRoute !== 'complete-profile') {

@@ -122,7 +122,7 @@ export default function CompleteProfileScreen() {
         unsafeMetadata: updatedUnsafeMetadata,
       });
 
-      router.replace('/(tabs)/home' as any);
+      router.replace('/home' as any);
     } catch (err: any) {
       console.error('Error updating Clerk profile metadata:', err);
       const errMsg = authService.formatAuthError(err);

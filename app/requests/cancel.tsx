@@ -42,7 +42,7 @@ export default function CancelRequestScreen() {
         [
           {
             text: 'View My Bookings',
-            onPress: () => router.replace('/(tabs)/requests' as any),
+            onPress: () => router.replace('/requests' as any),
           },
         ]
       );

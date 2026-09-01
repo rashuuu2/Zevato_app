@@ -14,7 +14,7 @@ export default function AccountCreatedScreen() {
   const { user } = useAuth();
 
   const handleGoHome = () => {
-    router.replace('/(tabs)/home' as any);
+    router.replace('/home' as any);
   };
 
   return (

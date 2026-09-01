@@ -1,33 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from '@/components/common/Header';
 import ProfileMenuItem from '@/components/profile/ProfileMenuItem';
+import EmptyState from '@/components/common/EmptyState';
 
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 
+interface NotificationItem {
+  id: string;
+  title: string;
+  sub: string;
+  time: string;
+}
+
 export default function NotificationsScreen() {
-  const notifs = [
-    { id: '1', title: 'Technician Assigned', sub: 'Ramesh Kumar has been assigned for AC Jet Service', time: '10 mins ago' },
-    { id: '2', title: 'Annual Service Due', sub: 'Your Washing Machine annual tune-up is due this week', time: '1 day ago' },
-    { id: '3', title: 'Offer: 20% Off RO Filter', sub: 'Use code FILTER20 on your next purifier service', time: '3 days ago' },
-  ];
+  const [notifs] = useState<NotificationItem[]>([]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <Header title="Notifications" />
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {notifs.map((n) => (
-          <ProfileMenuItem
-            key={n.id}
+        {notifs.length === 0 ? (
+          <EmptyState
             icon="notifications-outline"
-            title={n.title}
-            subtitle={`${n.sub} • ${n.time}`}
-            onPress={() => {}}
+            title="No Notifications"
+            description="You are all caught up! Real-time service updates and booking alerts will appear here."
           />
-        ))}
+        ) : (
+          notifs.map((n) => (
+            <ProfileMenuItem
+              key={n.id}
+              icon="notifications-outline"
+              title={n.title}
+              subtitle={`${n.sub} • ${n.time}`}
+              onPress={() => {}}
+            />
+          ))
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -40,5 +52,6 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
 });

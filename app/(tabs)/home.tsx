@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,8 +12,9 @@ import ProtectionCard from '@/components/home/ProtectionCard';
 import SectionHeader from '@/components/common/SectionHeader';
 
 import categories from '@/data/categories';
-import bookings from '@/data/bookings';
+import { bookingService } from '@/services/bookings';
 import useAuth from '@/hooks/useAuth';
+import useBooking from '@/hooks/useBooking';
 import { colors } from '@/constants/colors';
 import { config } from '@/constants/config';
 import { spacing } from '@/constants/spacing';
@@ -24,10 +25,36 @@ import { Booking } from '@/types/booking';
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { updateBooking, resetBooking } = useBooking();
+  const [activeBooking, setActiveBooking] = useState<Booking | undefined>(undefined);
+
+  const loadActiveBooking = useCallback(async () => {
+    try {
+      const allBookings = await bookingService.getAllBookings();
+      const active = allBookings.find(
+        (b) => b.status === 'in_progress' || b.status === 'scheduled' || b.status === 'technician_assigned'
+      );
+      setActiveBooking(active);
+    } catch (e) {
+      console.warn('Failed to load active booking on Home:', e);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadActiveBooking();
+    }, [loadActiveBooking])
+  );
 
   const handleCategorySelect = (category: ServiceCategory) => {
+    resetBooking();
+    updateBooking({
+      category,
+      categoryId: category.id,
+      categoryName: category.name,
+    });
     router.push({
-      pathname: '/services/categories' as any,
+      pathname: '/services/brands' as any,
       params: { categoryId: category.id, categoryName: category.name },
     });
   };
@@ -52,8 +79,6 @@ export default function HomeScreen() {
       console.error('Failed to reset onboarding state', error);
     }
   };
-
-  const activeBooking = bookings.find((b) => b.status === 'in_progress' || b.status === 'scheduled');
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -92,7 +117,7 @@ export default function HomeScreen() {
         <SectionHeader
           title="Explore Services"
           actionTitle="See All"
-          onAction={() => router.push('/(tabs)/services' as any)}
+          onAction={() => router.push('/services' as any)}
         />
         <ServiceGrid categories={categories.slice(0, 6)} onSelectCategory={handleCategorySelect} />
 
@@ -102,7 +127,7 @@ export default function HomeScreen() {
             <SectionHeader
               title="Recent Request"
               actionTitle="View All"
-              onAction={() => router.push('/(tabs)/requests' as any)}
+              onAction={() => router.push('/requests' as any)}
             />
             <RecentRequestCard booking={activeBooking} onPress={handleBookingSelect} />
           </>

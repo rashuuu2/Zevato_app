@@ -39,7 +39,7 @@ export default function InvoicesScreen() {
             title="No Invoices Found"
             description="Completed service invoices will appear here."
             actionTitle="Explore Services"
-            onAction={() => router.push('/(tabs)/services' as any)}
+            onAction={() => router.push('/services' as any)}
           />
         ) : (
           bookingList.map((b) => (

@@ -1,17 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 
 export interface BookingStepperProps {
-  currentStep: number; // 1: Schedule, 2: Address, 3: Payment
-  totalSteps?: number;
+  currentStep: number;
+  steps?: string[];
 }
 
-export const BookingStepper: React.FC<BookingStepperProps> = ({ currentStep, totalSteps = 3 }) => {
-  const steps = ['Schedule', 'Address', 'Payment'];
+const DEFAULT_STEPS = ['Category', 'Brand', 'Model', 'Issue', 'Schedule', 'Confirm'];
 
+export const BookingStepper: React.FC<BookingStepperProps> = ({
+  currentStep,
+  steps = DEFAULT_STEPS,
+}) => {
   return (
     <View style={styles.container}>
       {steps.map((label, index) => {
@@ -29,16 +33,29 @@ export const BookingStepper: React.FC<BookingStepperProps> = ({ currentStep, tot
                   isCompleted && styles.completedCircle,
                 ]}
               >
-                <Text
-                  style={[
-                    styles.stepNumber,
-                    (isActive || isCompleted) && styles.activeNumber,
-                  ]}
-                >
-                  {stepNum}
-                </Text>
+                {isCompleted ? (
+                  <Ionicons name="checkmark" size={14} color={colors.white} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.stepNumber,
+                      (isActive || isCompleted) && styles.activeNumber,
+                    ]}
+                  >
+                    {stepNum}
+                  </Text>
+                )}
               </View>
-              <Text style={[styles.label, isActive && styles.activeLabel]}>{label}</Text>
+              <Text
+                style={[
+                  styles.label,
+                  isActive && styles.activeLabel,
+                  isCompleted && styles.completedLabel,
+                ]}
+                numberOfLines={1}
+              >
+                {label}
+              </Text>
             </View>
             {index < steps.length - 1 && (
               <View
@@ -59,20 +76,21 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
   stepItem: {
     alignItems: 'center',
+    maxWidth: 52,
   },
   circle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: colors.divider,
     justifyContent: 'center',
     alignItems: 'center',
@@ -84,7 +102,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success,
   },
   stepNumber: {
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.xs - 1,
     fontWeight: typography.fontWeight.bold,
     color: colors.textSecondary,
   },
@@ -92,20 +110,24 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   label: {
-    fontSize: typography.fontSize.xs - 1,
-    color: colors.textSecondary,
-    marginTop: 4,
+    fontSize: 9,
+    color: colors.textMuted,
+    marginTop: 3,
+    textAlign: 'center',
   },
   activeLabel: {
     color: colors.primary,
     fontWeight: typography.fontWeight.bold,
   },
+  completedLabel: {
+    color: colors.success,
+  },
   line: {
     flex: 1,
     height: 2,
     backgroundColor: colors.divider,
-    marginHorizontal: spacing.xs,
-    marginBottom: 16,
+    marginHorizontal: 2,
+    marginBottom: 14,
   },
   completedLine: {
     backgroundColor: colors.success,

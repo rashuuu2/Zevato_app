@@ -1,14 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Input from '@/components/common/Input';
-import Button from '@/components/common/Button';
-import CategoryCard from '@/components/services/CategoryCard';
-import SectionHeader from '@/components/common/SectionHeader';
+import { Ionicons } from '@expo/vector-icons';
 
 import categories from '@/data/categories';
-import useRequests from '@/hooks/useRequests';
+import useBooking from '@/hooks/useBooking';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
@@ -16,92 +13,68 @@ import { ServiceCategory } from '@/types/service';
 
 export default function RequestScreen() {
   const router = useRouter();
-  const { addRequest } = useRequests();
+  const { updateBooking, resetBooking } = useBooking();
 
-  const [selectedCategory, setSelectedCategory] = useState<ServiceCategory>(categories[0]);
-  const [description, setDescription] = useState('');
-  const [preferredDate, setPreferredDate] = useState('Tomorrow');
-  const [preferredTime, setPreferredTime] = useState('10:00 AM');
-  const [loading, setLoading] = useState(false);
+  const handleSelectCategory = (category: ServiceCategory) => {
+    resetBooking();
+    updateBooking({
+      category,
+      categoryId: category.id,
+      categoryName: category.name,
+    });
+    router.push({
+      pathname: '/services/brands' as any,
+      params: { categoryId: category.id, categoryName: category.name },
+    });
+  };
 
-  const handleSubmit = () => {
-    if (!description.trim()) {
-      Alert.alert('Required Field', 'Please describe the issue with your appliance.');
-      return;
-    }
-
-    setLoading(true);
-    setTimeout(() => {
-      const created = addRequest({
-        categoryName: selectedCategory.name,
-        issueDescription: description,
-        preferredDate,
-        preferredTime,
-      });
-      setLoading(false);
-      Alert.alert('Request Submitted', `Your service request ${created.id} has been submitted. Our team will review and send a quote shortly.`, [
-        {
-          text: 'View Requests',
-          onPress: () => router.push('/(tabs)/requests' as any),
-        },
-      ]);
-    }, 600);
+  const renderCategoryCard = ({ item }: { item: ServiceCategory }) => {
+    const iconName = (item.icon || 'build-outline') as any;
+    return (
+      <TouchableOpacity
+        style={styles.categoryCard}
+        onPress={() => handleSelectCategory(item)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.categoryIconCircle}>
+          <Ionicons name={iconName} size={28} color={colors.primary} />
+        </View>
+        <Text style={styles.categoryName} numberOfLines={2}>
+          {item.name}
+        </Text>
+        <Text style={styles.categoryDesc} numberOfLines={2}>
+          {item.description}
+        </Text>
+      </TouchableOpacity>
+    );
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Create Custom Request</Text>
-        <Text style={styles.subtitle}>
-          Have an unlisted issue or custom appliance repair? Tell us what you need.
+      <View style={styles.container}>
+        <Text style={styles.pageTitle}>New Service Request</Text>
+        <Text style={styles.pageSubtitle}>
+          Select your appliance category to start the booking process
         </Text>
 
-        <SectionHeader title="Selected Appliance Category" />
-        <View style={styles.categoryBox}>
-          <CategoryCard
-            category={selectedCategory}
-            onPress={() => {
-              // rotate category for demo
-              const nextIndex = (categories.indexOf(selectedCategory) + 1) % categories.length;
-              setSelectedCategory(categories[nextIndex]);
-            }}
-          />
-          <Text style={styles.hintText}>Tap card to change category</Text>
-        </View>
-
-        <Input
-          label="Describe the Issue"
-          placeholder="e.g. AC cooling stops after 10 minutes, making loud buzzing noise..."
-          multiline
-          numberOfLines={4}
-          value={description}
-          onChangeText={setDescription}
-          style={styles.textArea}
+        <FlatList
+          data={categories}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          showsVerticalScrollIndicator={false}
+          renderItem={renderCategoryCard}
+          contentContainerStyle={styles.listContent}
+          ListFooterComponent={
+            <View style={styles.helpBanner}>
+              <Ionicons name="help-circle-outline" size={20} color={colors.primary} />
+              <Text style={styles.helpText}>
+                You'll select brand, enter model, describe the issue, and pick a time — all in the next steps.
+              </Text>
+            </View>
+          }
         />
-
-        <Input
-          label="Preferred Visit Date"
-          placeholder="e.g. Tomorrow or 02 Sep 2026"
-          value={preferredDate}
-          onChangeText={setPreferredDate}
-        />
-
-        <Input
-          label="Preferred Visit Time"
-          placeholder="e.g. 10:00 AM - 12:00 PM"
-          value={preferredTime}
-          onChangeText={setPreferredTime}
-        />
-
-        <Button
-          title="Submit Custom Request"
-          variant="primary"
-          size="large"
-          loading={loading}
-          onPress={handleSubmit}
-          style={styles.submitBtn}
-        />
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -111,35 +84,76 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  scrollContent: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
+  container: {
+    flex: 1,
   },
   pageTitle: {
     fontSize: typography.fontSize.heading,
     fontWeight: typography.fontWeight.bold,
     color: colors.text,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
   },
-  subtitle: {
-    fontSize: typography.fontSize.xs + 1,
+  pageSubtitle: {
+    fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  categoryBox: {
+    marginHorizontal: spacing.md,
+    marginTop: 2,
     marginBottom: spacing.md,
   },
-  hintText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.primary,
-    marginTop: -spacing.xs,
+  row: {
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  categoryCard: {
+    width: '48%',
+    backgroundColor: colors.surface,
+    borderRadius: spacing.radiusMd,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  categoryIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: spacing.xs,
-    fontStyle: 'italic',
   },
-  textArea: {
-    minHeight: 88,
+  categoryName: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 2,
   },
-  submitBtn: {
-    marginTop: spacing.md,
+  categoryDesc: {
+    fontSize: typography.fontSize.xs - 1,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  listContent: {
+    paddingBottom: spacing.md,
+  },
+  helpBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    padding: spacing.sm + 2,
+    borderRadius: spacing.radiusMd,
+    gap: spacing.xs,
+  },
+  helpText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.primaryDark,
+    flex: 1,
+    lineHeight: 16,
   },
 });

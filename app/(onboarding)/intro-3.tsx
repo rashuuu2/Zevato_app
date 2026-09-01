@@ -21,7 +21,7 @@ export default function Intro3Screen() {
       setLoading(true);
       await AsyncStorage.setItem(config.storageKeys.onboardingCompleted, 'true');
       if (isSignedIn) {
-        router.replace('/(tabs)/home' as any);
+        router.replace('/home' as any);
       } else {
         router.replace('/(auth)/login' as any);
       }

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import RequestTabs from '@/components/requests/RequestTabs';
@@ -17,14 +17,28 @@ export default function RequestsScreen() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'completed'>('all');
   const [bookingList, setBookingList] = useState<Booking[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
+  const loadData = useCallback(async () => {
+    try {
       const data = await bookingService.getAllBookings();
       setBookingList([...data]);
-    };
-    loadData();
+    } catch (e) {
+      console.warn('Failed to load bookings:', e);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
   const filteredBookings = bookingList.filter((b) => {
     if (activeTab === 'active') {
@@ -51,6 +65,7 @@ export default function RequestsScreen() {
           data={filteredBookings}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
           renderItem={({ item }) => (
             <RecentRequestCard booking={item} onPress={handleBookingPress} />
           )}
@@ -60,7 +75,7 @@ export default function RequestsScreen() {
               title="No Bookings Found"
               description="You do not have any service bookings in this category."
               actionTitle="Explore & Book Services"
-              onAction={() => router.push('/(tabs)/services' as any)}
+              onAction={() => router.push('/services' as any)}
             />
           )}
           contentContainerStyle={styles.listContent}
