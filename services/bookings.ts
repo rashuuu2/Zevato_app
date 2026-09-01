@@ -45,6 +45,7 @@ export const bookingService = {
           title: 'Google Pay (UPI)',
           details: 'Instant confirmation',
         },
+        totalAmount: bookingData.totalAmount,
       };
 
       const created = await api.post<Booking>('/bookings', payload);

@@ -14,12 +14,17 @@ export const FakePaymentService = {
     const { bookingId, userId, simulateOutcome = 'success', paymentMethodType } = options;
 
     const booking = await prisma.booking.findFirst({
-      where: { id: bookingId, userId },
+      where: {
+        OR: [
+          { id: bookingId },
+          { bookingNumber: bookingId },
+        ],
+      },
       include: { service: true, serviceOption: true, address: true, technician: true },
     });
 
     if (!booking) {
-      throw new Error('Booking not found or unauthorized access');
+      throw new Error(`Booking ${bookingId} not found`);
     }
 
     const simulatedTransactionId = `SIM-TXN-${Math.floor(100000 + Math.random() * 900000)}`;

@@ -32,10 +32,6 @@ function RootLayoutContent() {
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="services" />
-        <Stack.Screen name="bookings" />
-        <Stack.Screen name="requests" />
-        <Stack.Screen name="profile" />
         <Stack.Screen name="sso-callback" />
       </Stack>
     </SafeAreaProvider>

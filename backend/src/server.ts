@@ -14,7 +14,7 @@ dotenv.config();
 
 const app = express();
 const httpServer = http.createServer(app);
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5001;
 
 // Initialize Socket.IO server
 initSocketServer(httpServer);
@@ -41,8 +41,9 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error', message: err?.message });
 });
 
-httpServer.listen(port, () => {
-  console.log(`🚀 Zevota REST API & WebSocket server running on http://localhost:${port}`);
+httpServer.listen(Number(port), '0.0.0.0', () => {
+  console.log(`🚀 Zevota REST API & WebSocket server running on http://0.0.0.0:${port}`);
+  console.log(`📱 Accessible from mobile at http://<YOUR_IP>:${port}/api`);
 });
 
 export default app;

@@ -1,8 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL
-  ? process.env.EXPO_PUBLIC_API_URL.replace('/api', '')
-  : 'http://localhost:3000';
+import { getApiBaseUrl } from './api';
 
 let socket: Socket | null = null;
 
@@ -11,7 +8,9 @@ export const initSocketClient = (token: string): Socket => {
     return socket;
   }
 
-  socket = io(SOCKET_URL, {
+  const socketUrl = getApiBaseUrl().replace(/\/api\/?$/, '');
+
+  socket = io(socketUrl, {
     auth: { token },
     transports: ['websocket', 'polling'],
     autoConnect: true,
@@ -21,7 +20,7 @@ export const initSocketClient = (token: string): Socket => {
   });
 
   socket.on('connect', () => {
-    console.log(`⚡ Connected to Zevota WebSocket server [Socket ID: ${socket?.id}]`);
+    console.log(`⚡ Connected to Zevota WebSocket server [Socket ID: ${socket?.id}] at ${socketUrl}`);
   });
 
   socket.on('connect_error', (err: any) => {

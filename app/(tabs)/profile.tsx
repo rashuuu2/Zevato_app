@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,17 +22,25 @@ export default function ProfileScreen() {
   const [activeCount, setActiveCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
 
-  useEffect(() => {
-    const loadStats = async () => {
+  const loadStats = useCallback(async () => {
+    try {
       const all = await bookingService.getAllBookings();
-      setTotalCount(all.length);
+      const completed = all.filter((b) => b.status === 'completed');
+      setTotalCount(completed.length);
       const active = all.filter(
         (b) => b.status === 'scheduled' || b.status === 'in_progress' || b.status === 'technician_assigned'
       );
       setActiveCount(active.length);
-    };
-    loadStats();
+    } catch (e) {
+      console.warn('Failed to load profile stats:', e);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadStats();
+    }, [loadStats])
+  );
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out of your Zevota account?', [

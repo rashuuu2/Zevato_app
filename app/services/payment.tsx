@@ -59,8 +59,10 @@ export default function PaymentScreen() {
       setLoading(true);
 
       const created = await bookingService.createBooking({
-        serviceId: draft.serviceId || `svc-${draft.categoryId}-general`,
-        serviceTitle: draft.serviceTitle || `${draft.categoryName} Service`,
+        serviceId: draft.serviceId || 'ac-jet-service',
+        serviceTitle: draft.serviceTitle || `${draft.categoryName || 'Appliance'} Service`,
+        categoryId: draft.categoryId || 'ac',
+        brandId: draft.brandId,
         selectedOption: {
           id: `opt-${Date.now()}`,
           title: draft.selectedIssue || 'General Service',

@@ -1,6 +1,27 @@
-import { Constants } from 'expo-constants';
+import Constants from 'expo-constants';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
+export function getApiBaseUrl(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // Auto-detect host IP when running in Expo Go or dev client on device/emulator
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
+    (Constants as any).manifest?.debuggerHost;
+
+  if (hostUri) {
+    const hostIp = hostUri.split(':')[0];
+    if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
+      return `http://${hostIp}:5001/api`;
+    }
+  }
+
+  return 'http://localhost:5001/api';
+}
+
+export const API_BASE_URL = getApiBaseUrl();
 
 let authTokenGetter: (() => Promise<string | null>) | null = null;
 let activeUserMetadata: { name?: string; email?: string; phone?: string } | null = null;
@@ -47,7 +68,10 @@ export async function apiRequest<T>(
     if (activeUserMetadata.phone) reqHeaders['x-user-phone'] = activeUserMetadata.phone;
   }
 
-  const url = `${API_BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const currentBase = getApiBaseUrl();
+  const cleanBase = currentBase.endsWith('/') ? currentBase.slice(0, -1) : currentBase;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${cleanBase}${cleanEndpoint}`;
 
   try {
     const response = await fetch(url, {
@@ -66,7 +90,7 @@ export async function apiRequest<T>(
 
     return data as T;
   } catch (error: any) {
-    console.warn(`API Network/Server Failure [${method} ${endpoint}]:`, error.message);
+    console.warn(`API Network/Server Failure [${method} ${endpoint}]: ${error.message} (Target: ${url})`);
     throw error;
   }
 }
