@@ -1,29 +1,55 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from '@/components/common/Header';
 import Button from '@/components/common/Button';
 
-import bookings from '@/data/bookings';
+import { bookingService } from '@/services/bookings';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { Booking } from '@/types/booking';
 
 export default function InvoiceScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const booking = bookings.find((b) => b.id === id) || bookings[1] || bookings[0];
+  const [booking, setBooking] = useState<Booking | undefined>(undefined);
+  const [invoiceData, setInvoiceData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const basePrice = booking?.selectedOption?.price || 599;
-  const discount = 100;
-  const taxable = Math.max(0, basePrice - discount);
-  const tax = Math.round(taxable * 0.18);
-  const total = booking?.totalAmount || taxable + tax;
+  useEffect(() => {
+    const loadInvoice = async () => {
+      if (id) {
+        const foundBooking = await bookingService.getBookingById(id);
+        setBooking(foundBooking);
+        const inv = await bookingService.getBookingInvoice(id);
+        setInvoiceData(inv);
+      }
+      setLoading(false);
+    };
+    loadInvoice();
+  }, [id]);
 
-  const invoiceId = booking?.invoice?.id || `INV-${booking.id.replace(/[^0-9]/g, '') || '87120'}`;
-  const invoiceDate = booking?.invoice?.date || booking.scheduledDate || 'Today';
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <Header title="Tax Invoice" />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const basePrice = booking?.selectedOption?.price || invoiceData?.subtotal || 599;
+  const discount = invoiceData?.discount !== undefined ? invoiceData.discount : 100;
+  const tax = invoiceData?.tax !== undefined ? invoiceData.tax : Math.round((basePrice - discount) * 0.18);
+  const total = invoiceData?.total !== undefined ? invoiceData.total : (booking?.totalAmount || basePrice - discount + tax);
+
+  const invoiceId = invoiceData?.invoiceNumber || invoiceData?.id || `INV-${booking?.id?.replace(/[^0-9]/g, '') || '87120'}`;
+  const invoiceDate = invoiceData?.date || booking?.scheduledDate || 'Today';
 
   const handleDownload = () => {
     Alert.alert('Invoice Downloaded', `Tax invoice ${invoiceId} has been saved to your device downloads.`);
@@ -52,14 +78,16 @@ export default function InvoiceScreen() {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Booking Reference:</Text>
-            <Text style={styles.valBold}>{booking.id}</Text>
+            <Text style={styles.valBold}>{booking?.id || id}</Text>
           </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Service Address:</Text>
-            <Text style={styles.val} numberOfLines={1}>
-              {booking.address.street}, {booking.address.city}
-            </Text>
-          </View>
+          {booking?.address && (
+            <View style={styles.row}>
+              <Text style={styles.label}>Service Address:</Text>
+              <Text style={styles.val} numberOfLines={1}>
+                {booking.address.street}, {booking.address.city}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.divider} />
 
@@ -67,7 +95,9 @@ export default function InvoiceScreen() {
           <Text style={styles.tableHeading}>Itemized Service Breakdown</Text>
 
           <View style={styles.row}>
-            <Text style={styles.label}>{booking.serviceTitle} ({booking.selectedOption?.title || 'Care Package'})</Text>
+            <Text style={styles.label}>
+              {booking?.serviceTitle || 'Service Charge'} ({booking?.selectedOption?.title || 'Care Package'})
+            </Text>
             <Text style={styles.val}>{formatCurrency(basePrice)}</Text>
           </View>
 
@@ -107,6 +137,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   container: {
     padding: spacing.md,

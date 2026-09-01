@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/expo';
 import { userStore } from '@/store/userStore';
+import { setAuthTokenGetter, setUserMetadataHeader } from '@/services/api';
 import { UserProfile, ZevotaUserMetadata, Address } from '@/types/user';
 
 export const useAuth = () => {
-  const { isLoaded: isAuthLoaded, isSignedIn, userId, sessionId, signOut } = useClerkAuth();
+  const { isLoaded: isAuthLoaded, isSignedIn, userId, sessionId, getToken, signOut } = useClerkAuth();
   const { isLoaded: isUserLoaded, user: clerkUser } = useClerkUser();
 
   const isLoaded = isAuthLoaded && isUserLoaded;
@@ -20,6 +22,24 @@ export const useAuth = () => {
   const email = clerkUser?.primaryEmailAddress?.emailAddress || '';
   const phone = metadata.phone || clerkUser?.primaryPhoneNumber?.phoneNumber || 'Add phone number';
   const address = metadata.address;
+
+  useEffect(() => {
+    if (isSignedIn && getToken) {
+      setAuthTokenGetter(async () => {
+        try {
+          const token = await getToken();
+          return token || userId || 'dev-token-user';
+        } catch {
+          return userId || 'dev-token-user';
+        }
+      });
+      setUserMetadataHeader({
+        name,
+        email,
+        phone: phone !== 'Add phone number' ? phone : undefined,
+      });
+    }
+  }, [isSignedIn, getToken, userId, name, email, phone]);
 
   const primaryAddress: Address | null =
     address && address.street
@@ -64,4 +84,3 @@ export const useAuth = () => {
 };
 
 export default useAuth;
-

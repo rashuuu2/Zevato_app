@@ -1,0 +1,506 @@
+import { Response } from 'express';
+import { AuthenticatedRequest } from '../middleware/auth';
+import prisma from '../db';
+
+export const getBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { status } = req.query;
+    const where: any = { userId };
+    if (status && typeof status === 'string') {
+      if (status === 'active') {
+        where.bookingStatus = { in: ['scheduled', 'technician_assigned', 'in_progress'] };
+      } else {
+        where.bookingStatus = status;
+      }
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where,
+      include: {
+        service: true,
+        serviceOption: true,
+        address: true,
+        technician: true,
+        statusHistory: { orderBy: { stepNumber: 'asc' } },
+        invoice: true,
+        serviceReport: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const formatted = bookings.map((b) => formatBookingResponse(b));
+    res.json(formatted);
+  } catch (error) {
+    console.error('getBookings error:', error);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  }
+};
+
+export const getBookingById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id, userId },
+      include: {
+        service: true,
+        serviceOption: true,
+        address: true,
+        technician: true,
+        category: true,
+        brand: true,
+        product: true,
+        statusHistory: { orderBy: { stepNumber: 'asc' } },
+        invoice: true,
+        serviceReport: true,
+      },
+    });
+
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found or access denied' });
+      return;
+    }
+
+    res.json(formatBookingResponse(booking));
+  } catch (error) {
+    console.error('getBookingById error:', error);
+    res.status(500).json({ error: 'Failed to fetch booking details' });
+  }
+};
+
+export const createBooking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const {
+      serviceId,
+      serviceOptionId,
+      categoryId,
+      brandId,
+      productId,
+      addressId,
+      scheduledDate,
+      scheduledTimeSlot,
+      paymentMethod,
+    } = req.body;
+
+    if (!serviceId || !serviceOptionId || !addressId) {
+      res.status(422).json({ error: 'serviceId, serviceOptionId, and addressId are required' });
+      return;
+    }
+
+    // Verify service option and compute authoritative total server-side
+    const option = await prisma.serviceOption.findUnique({
+      where: { id: serviceOptionId },
+      include: { service: true },
+    });
+
+    if (!option) {
+      res.status(404).json({ error: 'Service option not found' });
+      return;
+    }
+
+    // Verify or fetch address
+    let address = await prisma.address.findFirst({
+      where: { id: addressId, userId },
+    });
+
+    if (!address) {
+      // If client passed raw address or address not found in user DB, get default or create
+      const userAddresses = await prisma.address.findMany({ where: { userId } });
+      if (userAddresses.length > 0) {
+        address = userAddresses[0];
+      } else {
+        address = await prisma.address.create({
+          data: {
+            userId,
+            title: 'Home',
+            street: req.body.address?.street || 'Flat 402, Green Valley Apartments',
+            city: req.body.address?.city || 'Bengaluru',
+            state: req.body.address?.state || 'Karnataka',
+            zipCode: req.body.address?.zipCode || '560102',
+            isDefault: true,
+          },
+        });
+      }
+    }
+
+    // Assign available technician from DB
+    const technician = await prisma.technician.findFirst({
+      where: { availability: 'available' },
+    });
+
+    const subtotal = option.price;
+    const discount = 100;
+    const tax = Math.round(subtotal * 0.18);
+    const total = subtotal - discount + tax;
+
+    const randomNum = Math.floor(10000 + Math.random() * 90000);
+    const bookingNumber = `ZEV-2026-${randomNum}`;
+
+    const newBooking = await prisma.booking.create({
+      data: {
+        bookingNumber,
+        userId,
+        serviceId: option.serviceId,
+        serviceOptionId: option.id,
+        categoryId: categoryId || option.service.categoryId,
+        brandId: brandId || null,
+        productId: productId || null,
+        addressId: address.id,
+        technicianId: technician?.id || null,
+        scheduledDate: scheduledDate || 'Tomorrow',
+        scheduledTimeSlot: scheduledTimeSlot || '10:00 AM - 12:00 PM',
+        paymentMethodType: paymentMethod?.type || 'upi',
+        paymentMethodTitle: paymentMethod?.title || 'Google Pay (UPI)',
+        paymentMethodDetails: paymentMethod?.details || 'Instant confirmation',
+        paymentStatus: 'paid',
+        bookingStatus: 'scheduled',
+        subtotal,
+        discount,
+        tax,
+        total,
+        statusHistory: {
+          create: [
+            { stepNumber: 1, title: 'Booking Confirmed', completed: true, timestamp: 'Just now' },
+            { stepNumber: 2, title: 'Technician Assigned', completed: true, timestamp: '1 min ago' },
+            { stepNumber: 3, title: 'Technician On The Way', completed: false },
+            { stepNumber: 4, title: 'Service Execution', completed: false },
+            { stepNumber: 5, title: 'Completion & Invoice', completed: false },
+          ],
+        },
+        invoice: {
+          create: {
+            invoiceNumber: `INV-${randomNum}`,
+            userId,
+            subtotal,
+            discount,
+            tax,
+            total,
+            itemsJson: JSON.stringify([
+              { description: option.title, amount: subtotal },
+              { description: 'Discount Applied', amount: -discount },
+              { description: 'GST (18%)', amount: tax },
+            ]),
+          },
+        },
+        serviceReport: {
+          create: {
+            inspectionNotes: 'Initial inspection completed during service intake.',
+            checklistJson: JSON.stringify([
+              { title: 'Cooling Efficiency Check', status: 'Passed' },
+              { title: 'Electrical Safety Test', status: 'Passed' },
+              { title: 'Filter Sanitation', status: 'Passed' },
+            ]),
+            technicianNotes: 'Appliance is performing within standard operating range.',
+          },
+        },
+      },
+      include: {
+        service: true,
+        serviceOption: true,
+        address: true,
+        technician: true,
+        category: true,
+        brand: true,
+        product: true,
+        statusHistory: { orderBy: { stepNumber: 'asc' } },
+        invoice: true,
+        serviceReport: true,
+      },
+    });
+
+    res.status(201).json(formatBookingResponse(newBooking));
+  } catch (error) {
+    console.error('createBooking error:', error);
+    res.status(500).json({ error: 'Failed to create booking' });
+  }
+};
+
+export const cancelBooking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id, userId },
+      include: { statusHistory: true },
+    });
+
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found or access denied' });
+      return;
+    }
+
+    if (booking.bookingStatus === 'completed') {
+      res.status(400).json({ error: 'Completed bookings cannot be cancelled' });
+      return;
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        bookingStatus: 'cancelled',
+        cancellationReason: reason || 'User requested cancellation',
+        paymentStatus: 'refunded',
+        statusHistory: {
+          create: {
+            stepNumber: (booking.statusHistory.length || 0) + 1,
+            title: `Cancelled: ${reason || 'User requested'}`,
+            completed: true,
+            timestamp: 'Just now',
+            note: reason || 'Cancelled by customer',
+          },
+        },
+      },
+      include: {
+        service: true,
+        serviceOption: true,
+        address: true,
+        technician: true,
+        statusHistory: { orderBy: { stepNumber: 'asc' } },
+        invoice: true,
+      },
+    });
+
+    res.json(formatBookingResponse(updated));
+  } catch (error) {
+    console.error('cancelBooking error:', error);
+    res.status(500).json({ error: 'Failed to cancel booking' });
+  }
+};
+
+export const getBookingStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: { id, userId },
+      include: {
+        technician: true,
+        statusHistory: { orderBy: { stepNumber: 'asc' } },
+      },
+    });
+
+    if (!booking) {
+      res.status(404).json({ error: 'Booking not found' });
+      return;
+    }
+
+    res.json({
+      bookingId: booking.id,
+      status: booking.bookingStatus,
+      technician: booking.technician,
+      steps: booking.statusHistory.map((s) => ({
+        id: s.id,
+        title: s.title,
+        completed: s.completed,
+        timestamp: s.timestamp || undefined,
+      })),
+    });
+  } catch (error) {
+    console.error('getBookingStatus error:', error);
+    res.status(500).json({ error: 'Failed to fetch status' });
+  }
+};
+
+export const getBookingInvoice = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const invoice = await prisma.invoice.findFirst({
+      where: { bookingId: id, userId },
+      include: {
+        booking: {
+          include: {
+            service: true,
+            serviceOption: true,
+            address: true,
+            user: true,
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      res.status(404).json({ error: 'Invoice not found' });
+      return;
+    }
+
+    res.json({
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      bookingId: invoice.bookingId,
+      date: invoice.issuedAt.toISOString().split('T')[0],
+      subtotal: invoice.subtotal,
+      discount: invoice.discount,
+      tax: invoice.tax,
+      total: invoice.total,
+      items: JSON.parse(invoice.itemsJson || '[]'),
+      user: {
+        name: invoice.booking.user.name,
+        email: invoice.booking.user.email,
+        address: invoice.booking.address,
+      },
+    });
+  } catch (error) {
+    console.error('getBookingInvoice error:', error);
+    res.status(500).json({ error: 'Failed to fetch invoice' });
+  }
+};
+
+export const getServiceReport = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const report = await prisma.serviceReport.findFirst({
+      where: {
+        bookingId: id,
+        booking: { userId },
+      },
+      include: {
+        booking: {
+          include: {
+            service: true,
+            technician: true,
+          },
+        },
+      },
+    });
+
+    if (!report) {
+      res.status(404).json({ error: 'Service report not found' });
+      return;
+    }
+
+    res.json({
+      id: report.id,
+      bookingId: report.bookingId,
+      inspectionNotes: report.inspectionNotes,
+      checklist: JSON.parse(report.checklistJson || '[]'),
+      technicianNotes: report.technicianNotes,
+      technician: report.booking.technician,
+      serviceTitle: report.booking.service.title,
+      completedAt: report.createdAt,
+    });
+  } catch (error) {
+    console.error('getServiceReport error:', error);
+    res.status(500).json({ error: 'Failed to fetch service report' });
+  }
+};
+
+function formatBookingResponse(b: any) {
+  return {
+    id: b.id,
+    bookingNumber: b.bookingNumber,
+    serviceId: b.serviceId,
+    serviceTitle: b.service?.title || 'Appliance Care Service',
+    selectedOption: b.serviceOption
+      ? {
+          id: b.serviceOption.id,
+          title: b.serviceOption.title,
+          description: b.serviceOption.description,
+          price: b.serviceOption.price,
+          durationMinutes: b.serviceOption.durationMinutes,
+          features: JSON.parse(b.serviceOption.featuresJson || '[]'),
+        }
+      : undefined,
+    categoryName: b.category?.name || 'Appliance Care',
+    brandName: b.brand?.name,
+    productName: b.product?.name,
+    status: b.bookingStatus,
+    scheduledDate: b.scheduledDate,
+    scheduledTimeSlot: b.scheduledTimeSlot,
+    address: b.address
+      ? {
+          id: b.address.id,
+          title: b.address.title,
+          street: b.address.street,
+          city: b.address.city,
+          state: b.address.state,
+          zipCode: b.address.zipCode,
+        }
+      : undefined,
+    paymentMethod: {
+      id: 'pay-1',
+      type: b.paymentMethodType,
+      title: b.paymentMethodTitle,
+      details: b.paymentMethodDetails,
+    },
+    subtotal: b.subtotal,
+    discount: b.discount,
+    tax: b.tax,
+    totalAmount: b.total,
+    technician: b.technician
+      ? {
+          id: b.technician.id,
+          name: b.technician.name,
+          phone: b.technician.phone,
+          rating: b.technician.rating,
+          completedJobs: b.technician.completedJobs,
+          avatarUrl: b.technician.avatarUrl,
+        }
+      : undefined,
+    steps: b.statusHistory
+      ? b.statusHistory.map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          completed: s.completed,
+          timestamp: s.timestamp || undefined,
+        }))
+      : [],
+    invoice: b.invoice
+      ? {
+          id: b.invoice.id,
+          bookingId: b.id,
+          date: b.invoice.issuedAt.toISOString().split('T')[0],
+          subtotal: b.invoice.subtotal,
+          tax: b.invoice.tax,
+          discount: b.invoice.discount,
+          total: b.invoice.total,
+          items: JSON.parse(b.invoice.itemsJson || '[]'),
+        }
+      : undefined,
+    createdAt: b.createdAt.toISOString(),
+  };
+}

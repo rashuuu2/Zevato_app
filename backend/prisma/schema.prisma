@@ -1,0 +1,214 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String      @id @default(uuid())
+  clerkUserId      String      @unique
+  name             String
+  email            String
+  phone            String?
+  avatarUrl        String?
+  profileCompleted Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  addresses        Address[]
+  bookings         Booking[]
+  invoices         Invoice[]
+}
+
+model Address {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("Home")
+  type      String   @default("home") // home, work, other
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String   @default("India")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings  Booking[]
+}
+
+model Category {
+  id          String    @id
+  name        String
+  icon        String
+  description String
+  itemCount   Int       @default(0)
+  popular     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+  services    Service[]
+  bookings    Booking[]
+}
+
+model Brand {
+  id        String    @id
+  name      String
+  logo      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products  Product[]
+  bookings  Booking[]
+}
+
+model Product {
+  id            String   @id
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  brandId       String
+  brand         Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  name          String
+  image         String
+  startingPrice Float
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings      Booking[]
+}
+
+model Service {
+  id          String          @id
+  categoryId  String
+  category    Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title       String
+  subtitle    String
+  image       String
+  rating      Float           @default(4.8)
+  reviewCount Int             @default(100)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  options     ServiceOption[]
+  bookings    Booking[]
+}
+
+model ServiceOption {
+  id              String   @id
+  serviceId       String
+  service         Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  title           String
+  description     String
+  price           Float
+  originalPrice   Float?
+  durationMinutes Int      @default(45)
+  rating          Float?   @default(4.8)
+  reviewCount     Int?     @default(50)
+  featuresJson    String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookings        Booking[]
+}
+
+model Technician {
+  id            String    @id
+  name          String
+  phone         String
+  rating        Float     @default(4.9)
+  completedJobs Int       @default(100)
+  avatarUrl     String?
+  currentLat    Float?
+  currentLng    Float?
+  availability  String    @default("available")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings      Booking[]
+}
+
+model Booking {
+  id                   String                 @id @default(uuid())
+  bookingNumber        String                 @unique
+  userId               String
+  user                 User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId            String
+  service              Service                @relation(fields: [serviceId], references: [id])
+  serviceOptionId      String
+  serviceOption        ServiceOption          @relation(fields: [serviceOptionId], references: [id])
+  categoryId           String?
+  category             Category?              @relation(fields: [categoryId], references: [id])
+  brandId              String?
+  brand                Brand?                 @relation(fields: [brandId], references: [id])
+  productId            String?
+  product              Product?               @relation(fields: [productId], references: [id])
+  addressId            String
+  address              Address                @relation(fields: [addressId], references: [id])
+  technicianId         String?
+  technician           Technician?            @relation(fields: [technicianId], references: [id])
+
+  scheduledDate        String
+  scheduledTimeSlot    String
+  paymentMethodType    String                 @default("upi")
+  paymentMethodTitle   String                 @default("Google Pay (UPI)")
+  paymentMethodDetails String?                @default("Instant confirmation")
+  paymentStatus        String                 @default("paid") // pending, paid, refunded
+  bookingStatus        String                 @default("scheduled") // scheduled, technician_assigned, in_progress, completed, cancelled
+  cancellationReason   String?
+
+  subtotal             Float
+  discount             Float                  @default(0)
+  tax                  Float                  @default(0)
+  total                Float
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  statusHistory        BookingStatusHistory[]
+  serviceReport        ServiceReport?
+  invoice              Invoice?
+}
+
+model BookingStatusHistory {
+  id         String   @id @default(uuid())
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  stepNumber Int
+  title      String
+  completed  Boolean  @default(false)
+  timestamp  String?
+  note       String?
+  createdAt  DateTime @default(now())
+}
+
+model ServiceReport {
+  id              String   @id @default(uuid())
+  bookingId       String   @unique
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  inspectionNotes String
+  checklistJson   String   @default("[]")
+  technicianNotes String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  bookingId     String   @unique
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtotal      Float
+  discount      Float    @default(0)
+  tax           Float
+  total         Float
+  itemsJson     String   @default("[]")
+  issuedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

@@ -14,7 +14,7 @@ export interface Technician {
   phone: string;
   rating: number;
   completedJobs: number;
-  avatarUrl: string;
+  avatarUrl?: string;
   latitude?: number;
   longitude?: number;
 }
@@ -45,17 +45,24 @@ export interface Invoice {
 
 export interface Booking {
   id: string;
+  bookingNumber?: string;
   serviceId: string;
   serviceTitle: string;
   selectedOption: ServiceOption;
+  categoryId?: string;
   categoryName: string;
+  brandId?: string;
   brandName?: string;
+  productId?: string;
   productName?: string;
   status: BookingStatus;
   scheduledDate: string;
   scheduledTimeSlot: string;
   address: Address;
   paymentMethod: PaymentMethod;
+  subtotal?: number;
+  discount?: number;
+  tax?: number;
   totalAmount: number;
   technician?: Technician;
   steps?: BookingStep[];
