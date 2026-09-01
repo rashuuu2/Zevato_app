@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -10,13 +10,29 @@ import ProfileMenuItem from '@/components/profile/ProfileMenuItem';
 import SectionHeader from '@/components/common/SectionHeader';
 
 import useAuth from '@/hooks/useAuth';
+import { bookingService } from '@/services/bookings';
 import { colors } from '@/constants/colors';
 import { config } from '@/constants/config';
 import { spacing } from '@/constants/spacing';
+import { Booking } from '@/types/booking';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const [activeCount, setActiveCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      const all = await bookingService.getAllBookings();
+      setTotalCount(all.length);
+      const active = all.filter(
+        (b) => b.status === 'scheduled' || b.status === 'in_progress' || b.status === 'technician_assigned'
+      );
+      setActiveCount(active.length);
+    };
+    loadStats();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out of your Zevota account?', [
@@ -61,8 +77,8 @@ export default function ProfileScreen() {
         />
 
         <AccountStats
-          activeBookingsCount={1}
-          totalServicesCount={8}
+          activeBookingsCount={activeCount}
+          totalServicesCount={totalCount}
           savedAmount={1450}
         />
 
