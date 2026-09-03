@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Rect, Path, Circle, Defs, LinearGradient as SvgLinearGradient, Stop, Line } from 'react-native-svg';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
-import { typography } from '@/constants/typography';
 
 export interface SubscriptionCardProps {
   planName?: string;
@@ -17,7 +17,7 @@ export interface SubscriptionCardProps {
 export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
   planName = 'Premium Plan',
   planStatus = 'Active',
-  walletBalance = '₹1,00,000',
+  walletBalance = '₹ 1,00,000',
   expiryDate = '24 May 2025',
   onPress,
 }) => {
@@ -29,19 +29,19 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
         end={{ x: 1, y: 1 }}
         style={styles.card}
       >
-        {/* Top row */}
+        {/* Top Row: Crown + "My Subscription" & "View Details >" Button */}
         <View style={styles.topRow}>
           <View style={styles.labelRow}>
-            <Ionicons name="briefcase-outline" size={16} color="rgba(255,255,255,0.85)" />
+            <MaterialCommunityIcons name="crown" size={15} color="rgba(255, 255, 255, 0.95)" />
             <Text style={styles.labelText}>My Subscription</Text>
           </View>
           <TouchableOpacity style={styles.viewDetailsBtn} onPress={onPress} activeOpacity={0.8}>
             <Text style={styles.viewDetailsText}>View Details</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        {/* Plan name + status */}
+        {/* Plan Name + "Active" Pill Badge */}
         <View style={styles.planRow}>
           <Text style={styles.planName}>{planName}</Text>
           <View style={styles.statusBadge}>
@@ -49,26 +49,89 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
           </View>
         </View>
 
-        {/* Wallet balance */}
+        {/* Wallet Balance */}
         <Text style={styles.walletLabel}>Wallet Balance</Text>
         <Text style={styles.walletAmount}>{walletBalance}</Text>
 
-        {/* Bottom row */}
-        <View style={styles.bottomRow}>
-          <View style={styles.validityRow}>
-            <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.validityText}>Valid till {expiryDate}</Text>
-          </View>
+        {/* Bottom Validity Row */}
+        <View style={styles.validityRow}>
+          <Ionicons name="calendar-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+          <Text style={styles.validityText}>Valid till {expiryDate}</Text>
         </View>
 
-        {/* Wallet illustration overlay on right */}
-        <View style={styles.illustrationContainer}>
-          <View style={styles.walletIllustration}>
-            <Ionicons name="wallet-outline" size={52} color="rgba(255,255,255,0.15)" />
-          </View>
-          <View style={styles.coinCircle}>
-            <Ionicons name="star" size={14} color="#FFD700" />
-          </View>
+        {/* 3D-Style Wallet Illustration with Cash & Gold Coin */}
+        <View style={styles.illustrationContainer} pointerEvents="none">
+          <Svg width={74} height={66} viewBox="0 0 76 68">
+            <Defs>
+              <SvgLinearGradient id="walletGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#3B82F6" />
+                <Stop offset="100%" stopColor="#1D4ED8" />
+              </SvgLinearGradient>
+              <SvgLinearGradient id="flapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#60A5FA" />
+                <Stop offset="100%" stopColor="#2563EB" />
+              </SvgLinearGradient>
+              <SvgLinearGradient id="billGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor="#F8FAFC" />
+                <Stop offset="100%" stopColor="#E2E8F0" />
+              </SvgLinearGradient>
+              <SvgLinearGradient id="coinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <Stop offset="0%" stopColor="#FDE047" />
+                <Stop offset="100%" stopColor="#EAB308" />
+              </SvgLinearGradient>
+            </Defs>
+
+            {/* Back Cash Banknote */}
+            <Rect
+              x="14"
+              y="6"
+              width="34"
+              height="24"
+              rx="3"
+              transform="rotate(-10 31 18)"
+              fill="url(#billGrad)"
+              opacity={0.88}
+            />
+
+            {/* Front Cash Banknote */}
+            <Rect
+              x="20"
+              y="4"
+              width="34"
+              height="24"
+              rx="3"
+              transform="rotate(4 37 16)"
+              fill="#FFFFFF"
+            />
+            <Line
+              x1="24"
+              y1="12"
+              x2="38"
+              y2="12"
+              stroke="#CBD5E1"
+              strokeWidth={1}
+              transform="rotate(4 37 16)"
+            />
+
+            {/* Wallet Main Body */}
+            <Rect x="6" y="16" width="58" height="42" rx="9" fill="url(#walletGrad)" />
+            <Rect x="6" y="16" width="58" height="5" rx="2.5" fill="#93C5FD" opacity={0.4} />
+
+            {/* Front Flap */}
+            <Path
+              d="M 6 32 C 6 26, 12 24, 20 24 L 50 24 C 58 24, 64 26, 64 32 L 64 49 C 64 54, 59 58, 54 58 L 16 58 C 10 58, 6 54, 6 49 Z"
+              fill="url(#flapGrad)"
+            />
+
+            {/* Snap Button on Flap */}
+            <Circle cx="54" cy="38" r="4.5" fill="#E2E8F0" />
+            <Circle cx="54" cy="38" r="3" fill="#94A3B8" />
+
+            {/* Gold Coin at Bottom-Right Corner */}
+            <Circle cx="58" cy="52" r="11" fill="url(#coinGrad)" stroke="#CA8A04" strokeWidth={1.5} />
+            <Circle cx="58" cy="52" r="8" fill="none" stroke="#FEF08A" strokeWidth={1} />
+            <Circle cx="58" cy="52" r="2.5" fill="#CA8A04" />
+          </Svg>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -78,119 +141,93 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     marginHorizontal: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
   card: {
     borderRadius: spacing.radiusLg,
-    padding: spacing.md + 2,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     position: 'relative',
     overflow: 'hidden',
-    minHeight: 180,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 6,
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   labelText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
-    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.92)',
   },
   viewDetailsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: spacing.radiusFull,
     gap: 2,
   },
   viewDetailsText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.primary,
   },
   planRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    gap: 7,
+    marginTop: 2,
   },
   planName: {
-    fontSize: typography.fontSize.md,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 15.5,
+    fontWeight: '700',
     color: colors.white,
   },
   statusBadge: {
-    backgroundColor: '#22C55E',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
     paddingVertical: 2,
     paddingHorizontal: 8,
     borderRadius: spacing.radiusFull,
   },
   statusText: {
-    fontSize: typography.fontSize.xs - 2,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 10.5,
+    fontWeight: '700',
     color: colors.white,
   },
   walletLabel: {
-    fontSize: typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.7)',
-    marginTop: spacing.xs,
+    fontSize: 11.5,
+    color: 'rgba(255, 255, 255, 0.75)',
+    marginTop: 6,
   },
   walletAmount: {
-    fontSize: typography.fontSize.heading + 2,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: 27,
+    fontWeight: '700',
     color: colors.white,
-    letterSpacing: -0.5,
-    marginTop: 2,
-  },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.sm + 2,
+    letterSpacing: -0.4,
+    marginTop: 1,
+    marginBottom: 6,
   },
   validityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   validityText: {
-    fontSize: typography.fontSize.xs,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11.5,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   illustrationContainer: {
     position: 'absolute',
-    right: 16,
-    bottom: 40,
-  },
-  walletIllustration: {
-    width: 72,
-    height: 72,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  coinCircle: {
-    position: 'absolute',
-    bottom: -4,
-    right: -4,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,215,0,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
+    right: 14,
+    bottom: 12,
   },
 });
 
