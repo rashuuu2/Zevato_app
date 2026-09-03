@@ -24,7 +24,18 @@ import { Booking } from '@/types/booking';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { user } = useAuth();
+  const authState = useAuth();
+  const { user } = authState;
+
+  console.log('>>> [HOME SCREEN RENDER]', {
+    isLoaded: authState.isLoaded,
+    isSignedIn: authState.isSignedIn,
+    userId: authState.userId,
+    userName: user?.name,
+    userEmail: user?.email,
+    profileCompleted: user?.profileCompleted,
+  });
+
   const { updateBooking, resetBooking } = useBooking();
   const [activeBooking, setActiveBooking] = useState<Booking | undefined>(undefined);
 

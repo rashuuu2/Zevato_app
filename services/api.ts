@@ -1,8 +1,12 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 export function getApiBaseUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    const envUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (!envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+      return envUrl;
+    }
   }
 
   // Auto-detect host IP when running in Expo Go or dev client on device/emulator
@@ -16,6 +20,10 @@ export function getApiBaseUrl(): string {
     if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
       return `http://${hostIp}:5001/api`;
     }
+  }
+
+  if (Platform.OS === 'android') {
+    return 'http://10.1.2.116:5001/api';
   }
 
   return 'http://localhost:5001/api';

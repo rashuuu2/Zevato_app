@@ -9,14 +9,17 @@ export default function AuthLayout() {
   const { isLoaded, isSignedIn, user } = useAuth();
 
   useEffect(() => {
+    console.log('>>> [AUTH GUARD]', { isLoaded, isSignedIn, profileCompleted: user?.profileCompleted, segments });
     if (!isLoaded) return;
 
     if (isSignedIn) {
       if (user?.profileCompleted) {
-        router.replace('/home' as any);
+        console.log('>>> [AUTH GUARD] Redirecting to /(tabs)/home');
+        router.replace('/(tabs)/home' as any);
       } else {
         const currentRoute = segments[segments.length - 1];
         if (currentRoute !== 'complete-profile') {
+          console.log('>>> [AUTH GUARD] Redirecting to /(auth)/complete-profile from', currentRoute);
           router.replace('/(auth)/complete-profile' as any);
         }
       }

@@ -41,8 +41,8 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error', message: err?.message });
 });
 
-httpServer.listen(Number(port), '0.0.0.0', () => {
-  console.log(`🚀 Zevota REST API & WebSocket server running on http://0.0.0.0:${port}`);
+httpServer.listen(Number(port), '127.0.0.1', () => {
+  console.log(`🚀 Zevota REST API & WebSocket server running on http://127.0.0.1:${port}`);
   console.log(`📱 Accessible from mobile at http://<YOUR_IP>:${port}/api`);
 });
 

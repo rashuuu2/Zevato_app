@@ -87,14 +87,35 @@ export default function SignupScreen() {
     try {
       setGoogleLoading(true);
       setError('');
-      const { createdSessionId, setActive: setSSOActive } = await startSSOFlow({
+
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: 'zevatoapp',
+        path: 'sso-callback',
+      });
+      console.log('\n========================================');
+      console.log('>>> [OAuth DEBUG] Generated Redirect URL:');
+      console.log(redirectUrl);
+      console.log('========================================\n');
+
+      const ssoResult = await startSSOFlow({
         strategy: 'oauth_google',
+        redirectUrl,
       });
 
-      if (createdSessionId && setSSOActive) {
-        await setSSOActive({ session: createdSessionId });
+      console.log('>>> [OAuth DEBUG] startSSOFlow result:', JSON.stringify(ssoResult, null, 2));
+
+      const { createdSessionId, setActive: setSSOActive } = ssoResult;
+      const targetSessionId = createdSessionId || ssoResult.signIn?.createdSessionId;
+
+      if (targetSessionId && setSSOActive) {
+        console.log('>>> [OAuth DEBUG] Activating session:', targetSessionId);
+        await setSSOActive({ session: targetSessionId });
+        router.replace('/(tabs)/home' as any);
+      } else {
+        console.log('>>> [OAuth DEBUG] No createdSessionId in result');
       }
     } catch (err: any) {
+      console.error('>>> [OAuth DEBUG] Google Sign-Up Error:', err);
       const errMsg = authService.formatAuthError(err);
       setError(errMsg);
     } finally {

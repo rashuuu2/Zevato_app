@@ -3,15 +3,22 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ClerkProvider, ClerkLoaded } from '@clerk/expo';
-import { tokenCache } from '@clerk/expo/token-cache';
+import { tokenCache } from '@/utils/tokenCache';
+import * as WebBrowser from 'expo-web-browser';
+import { useAuth } from '@clerk/expo';
 import { colors } from '@/constants/colors';
 import { registerForPushNotificationsAsync } from '@/services/notifications';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const publishableKey =
   process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ||
   'pk_test_Y2xlcmstdGVzdC5jbGVyay5hY2NvdW50cy5kZXYk';
 
 function RootLayoutContent() {
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  console.log('>>> [ROOT LAYOUT RENDER]', new Date().toISOString(), { isLoaded, isSignedIn, userId });
+
   useEffect(() => {
     registerForPushNotificationsAsync().catch((err) => {
       console.warn('Push notification initialization skipped/failed:', err);

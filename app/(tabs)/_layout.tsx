@@ -11,11 +11,14 @@ export default function TabsLayout() {
   const { isLoaded, isSignedIn, user } = useAuth();
 
   useEffect(() => {
+    console.log('>>> [TABS GUARD]', { isLoaded, isSignedIn, profileCompleted: user?.profileCompleted });
     if (!isLoaded) return;
 
     if (!isSignedIn) {
+      console.log('>>> [TABS GUARD] Redirecting to /login because isSignedIn is false');
       router.replace('/(auth)/login' as any);
     } else if (!user?.profileCompleted) {
+      console.log('>>> [TABS GUARD] Redirecting to /complete-profile because profileCompleted is false');
       router.replace('/(auth)/complete-profile' as any);
     }
   }, [isLoaded, isSignedIn, user?.profileCompleted]);

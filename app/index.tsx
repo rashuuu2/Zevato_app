@@ -34,7 +34,7 @@ export default function SplashScreen() {
         } else if (isSignedIn) {
           if (user?.profileCompleted) {
             // Returning authenticated user with complete profile: Home dashboard
-            router.replace('/home' as any);
+            router.replace('/(tabs)/home' as any);
           } else {
             // Authenticated user with incomplete profile: Complete Profile screen
             router.replace('/(auth)/complete-profile' as any);

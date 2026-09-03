@@ -8,6 +8,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader';
 import AccountStats from '@/components/profile/AccountStats';
 import ProfileMenuItem from '@/components/profile/ProfileMenuItem';
 import SectionHeader from '@/components/common/SectionHeader';
+import * as WebBrowser from 'expo-web-browser';
 
 import useAuth from '@/hooks/useAuth';
 import { bookingService } from '@/services/bookings';
@@ -53,6 +54,9 @@ export default function ProfileScreen() {
             if (signOut) {
               await signOut();
             }
+            try {
+              WebBrowser.dismissAuthSession();
+            } catch {}
           } catch (e) {
             console.error('Error signing out:', e);
           } finally {

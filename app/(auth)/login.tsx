@@ -17,13 +17,10 @@ import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 
+// NOTE: warmUpAsync on Android Expo Go can cause CustomTabsService connection
+// to get orphaned on component re-mount, hanging subsequent openAuthSessionAsync calls.
 const useWarmUpBrowser = () => {
-  useEffect(() => {
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
-  }, []);
+  // disabled on Android to prevent CustomTabs hang on repeat sign-in
 };
 
 export default function LoginScreen() {
@@ -43,17 +40,17 @@ export default function LoginScreen() {
       setError('Please enter a valid email address');
       return;
     }
-    if (!password || password.length < 6) {
-      setError('Password must be at least 6 characters');
+
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
 
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
       if (!isLoaded || !signIn) {
-        router.replace('/(auth)/complete-profile' as any);
         return;
       }
 
@@ -78,17 +75,45 @@ export default function LoginScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log('>>> [OAuth DEBUG] "Continue with Google" button pressed!');
     try {
       setGoogleLoading(true);
       setError('');
-      const { createdSessionId, setActive: setSSOActive } = await startSSOFlow({
+
+      // Dismiss any lingering Android auth session before opening a new one
+      try {
+        WebBrowser.dismissAuthSession();
+      } catch {}
+
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: 'zevatoapp',
+        path: 'sso-callback',
+      });
+      console.log('\n========================================');
+      console.log('>>> [OAuth DEBUG] Generated Redirect URL:');
+      console.log(redirectUrl);
+      console.log('========================================\n');
+
+      console.log('>>> [OAuth DEBUG] Calling startSSOFlow now...');
+      const ssoResult = await startSSOFlow({
         strategy: 'oauth_google',
+        redirectUrl,
       });
 
-      if (createdSessionId && setSSOActive) {
-        await setSSOActive({ session: createdSessionId });
+      console.log('>>> [OAuth DEBUG] startSSOFlow promise resolved! Result:', JSON.stringify(ssoResult, null, 2));
+
+      const { createdSessionId, setActive: setSSOActive } = ssoResult;
+      const targetSessionId = createdSessionId || ssoResult.signIn?.createdSessionId;
+
+      if (targetSessionId && setSSOActive) {
+        console.log('>>> [OAuth DEBUG] Activating session:', targetSessionId);
+        await setSSOActive({ session: targetSessionId });
+        router.replace('/(tabs)/home' as any);
+      } else {
+        console.log('>>> [OAuth DEBUG] No createdSessionId in result (auth may complete via sso-callback)');
       }
     } catch (err: any) {
+      console.error('>>> [OAuth DEBUG] Google Sign-In Error:', err);
       const errMsg = authService.formatAuthError(err);
       setError(errMsg);
     } finally {
