@@ -1,49 +1,107 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import {
+  View,
+  FlatList,
+  Image,
+  StyleSheet,
+  Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Button from '@/components/common/Button';
-import { colors } from '@/constants/colors';
-import { spacing } from '@/constants/spacing';
-import { typography } from '@/constants/typography';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import useAuth from '@/hooks/useAuth';
+import { config } from '@/constants/config';
+import PaginationIndicator from '@/components/common/PaginationIndicator';
 
-export default function WelcomeScreen() {
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+const onboardingImages = [
+  require('@/assets/images/onboarding-1.png'),
+  require('@/assets/images/onboarding-2.png'),
+  require('@/assets/images/onboarding-3.png'),
+];
+
+// 4th phantom slide data (no image, transparent)
+const SLIDES = [
+  { key: 'slide-1', image: onboardingImages[0] },
+  { key: 'slide-2', image: onboardingImages[1] },
+  { key: 'slide-3', image: onboardingImages[2] },
+  { key: 'slide-phantom', image: null },
+];
+
+export default function OnboardingCarouselScreen() {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
+  const [currentPage, setCurrentPage] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
+
+  const handleFinishOnboarding = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(config.storageKeys.onboardingCompleted, 'true');
+      if (isSignedIn) {
+        router.replace('/(tabs)/home' as any);
+      } else {
+        router.replace('/(auth)/login' as any);
+      }
+    } catch (error) {
+      console.error('Failed to set onboarding completion state:', error);
+      router.replace('/(auth)/login' as any);
+    }
+  }, [isSignedIn, router]);
+
+  // When the phantom slide (index 3) is reached, navigate away
+  useEffect(() => {
+    if (currentPage === 3) {
+      handleFinishOnboarding();
+    }
+  }, [currentPage, handleFinishOnboarding]);
+
+  const onMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const pageIndex = Math.round(offsetX / SCREEN_WIDTH);
+    setCurrentPage(pageIndex);
+  };
+
+  const renderItem = ({ item }: { item: (typeof SLIDES)[number] }) => {
+    if (!item.image) {
+      // Phantom slide — transparent, same width
+      return <View style={styles.slide} />;
+    }
+
+    return (
+      <View style={styles.slide}>
+        <Image
+          source={item.image}
+          style={styles.slideImage}
+          resizeMode="cover"
+        />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.badge}>
-          <Ionicons name="sparkles" size={16} color={colors.primary} />
-          <Text style={styles.badgeText}>WELCOME TO ZEVOTA CARE</Text>
-        </View>
-        <Text style={styles.title}>Hassle-Free Home & Appliance Protection</Text>
-        <Text style={styles.subtitle}>
-          Expert repairs, scheduled maintenance, and complete coverage for all your home appliances.
-        </Text>
+      <FlatList
+        ref={flatListRef}
+        data={SLIDES}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.key}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        getItemLayout={(_, index) => ({
+          length: SCREEN_WIDTH,
+          offset: SCREEN_WIDTH * index,
+          index,
+        })}
+      />
 
-        <View style={styles.illustrationBox}>
-          <View style={styles.iconCircleBig}>
-            <Ionicons name="home" size={64} color={colors.primary} />
-          </View>
-          <View style={styles.floatingBadge1}>
-            <Ionicons name="shield-checkmark" size={18} color={colors.success} />
-            <Text style={styles.floatingText}>100% Genuine Parts</Text>
-          </View>
-          <View style={styles.floatingBadge2}>
-            <Ionicons name="time" size={18} color={colors.primary} />
-            <Text style={styles.floatingText}>60-Min On Demand</Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.footer}>
-        <Button
-          title="Get Started"
-          variant="primary"
-          size="large"
-          onPress={() => router.push('/(onboarding)/intro-1' as any)}
-        />
+      {/* Pagination indicator — clamped to max index 2 so no 4th dot appears */}
+      <View style={styles.paginationWrapper}>
+        <PaginationIndicator total={3} activeIndex={Math.min(currentPage, 2)} />
       </View>
     </View>
   );
@@ -52,108 +110,21 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xxl,
-    paddingBottom: spacing.lg,
-    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
   },
-  content: {
-    flex: 1,
-    alignItems: 'center',
+  slide: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: spacing.radiusFull,
-    gap: spacing.xs,
-    marginBottom: spacing.md,
+  slideImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
   },
-  badgeText: {
-    color: colors.primary,
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.bold,
-    letterSpacing: 0.5,
-  },
-  title: {
-    fontSize: typography.fontSize.display - 4,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text,
-    textAlign: 'center',
-    lineHeight: 38,
-  },
-  subtitle: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    lineHeight: 22,
-    paddingHorizontal: spacing.sm,
-  },
-  illustrationBox: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    width: '100%',
-    marginVertical: spacing.lg,
-  },
-  iconCircleBig: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  floatingBadge1: {
+  paginationWrapper: {
     position: 'absolute',
-    top: '20%',
-    left: '5%',
-    flexDirection: 'row',
+    bottom: 60,
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: spacing.radiusFull,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-    gap: 6,
-  },
-  floatingBadge2: {
-    position: 'absolute',
-    bottom: '20%',
-    right: '5%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingVertical: spacing.xs + 2,
-    paddingHorizontal: spacing.sm + 2,
-    borderRadius: spacing.radiusFull,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
-    gap: 6,
-  },
-  floatingText: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
-    color: colors.text,
-  },
-  footer: {
-    width: '100%',
   },
 });
