@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ServiceCategory } from '@/types/service';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
@@ -10,6 +10,37 @@ export interface ServiceGridProps {
   categories: ServiceCategory[];
   onSelectCategory: (category: ServiceCategory) => void;
 }
+
+const renderCategoryIcon = (category: ServiceCategory) => {
+  const iconColor = colors.primary;
+  const iconSize = 26;
+
+  switch (category.id) {
+    case 'appliances':
+      return <MaterialCommunityIcons name="washing-machine" size={iconSize} color={iconColor} />;
+    case 'plumbing':
+      return <MaterialCommunityIcons name="faucet" size={iconSize} color={iconColor} />;
+    case 'furniture':
+      return <MaterialCommunityIcons name="sofa" size={iconSize} color={iconColor} />;
+    case 'cleaning':
+      return (
+        <View style={styles.cleaningIconWrapper}>
+          <MaterialCommunityIcons name="broom" size={iconSize} color={iconColor} />
+          <Ionicons name="sparkles" size={10} color={iconColor} style={styles.cleaningSparkle} />
+        </View>
+      );
+    case 'more':
+      return <MaterialCommunityIcons name="dots-grid" size={iconSize} color={iconColor} />;
+    case 'electronics':
+      return <Ionicons name="tv-outline" size={iconSize} color={iconColor} />;
+    case 'electricals':
+      return <Ionicons name="flash-outline" size={iconSize} color={iconColor} />;
+    case 'car-services':
+      return <Ionicons name="car-outline" size={iconSize} color={iconColor} />;
+    default:
+      return <Ionicons name={(category.icon as any) || 'grid-outline'} size={iconSize} color={iconColor} />;
+  }
+};
 
 export const ServiceGrid: React.FC<ServiceGridProps> = ({ categories, onSelectCategory }) => {
   return (
@@ -21,9 +52,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ categories, onSelectCa
           onPress={() => onSelectCategory(cat)}
           activeOpacity={0.7}
         >
-          <View style={styles.iconBox}>
-            <Ionicons name={cat.icon as any} size={26} color={colors.primary} />
-          </View>
+          <View style={styles.iconBox}>{renderCategoryIcon(cat)}</View>
           <Text style={styles.label} numberOfLines={2}>
             {cat.name}
           </Text>
@@ -54,9 +83,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xs + 2,
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: '#EAF0FB',
+  },
+  cleaningIconWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cleaningSparkle: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    opacity: 0.85,
   },
   label: {
     fontSize: typography.fontSize.xs - 1,
