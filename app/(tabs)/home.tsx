@@ -1,14 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import SubscriptionCard from '@/components/home/SubscriptionCard';
+import QuickActions from '@/components/home/QuickActions';
 import ServiceGrid from '@/components/home/ServiceGrid';
-import RecentRequestCard from '@/components/home/RecentRequestCard';
 import ProtectionCard from '@/components/home/ProtectionCard';
+import RecentRequestCard from '@/components/home/RecentRequestCard';
 import SectionHeader from '@/components/common/SectionHeader';
 
 import categories from '@/data/categories';
@@ -37,27 +38,29 @@ export default function HomeScreen() {
   });
 
   const { updateBooking, resetBooking } = useBooking();
-  const [activeBooking, setActiveBooking] = useState<Booking | undefined>(undefined);
+  const [recentBookings, setRecentBookings] = useState<Booking[]>([]);
 
-  const loadActiveBooking = useCallback(async () => {
+  const loadRecentBookings = useCallback(async () => {
     try {
       const allBookings = await bookingService.getAllBookings();
-      const active = allBookings.find(
-        (b) => b.status === 'in_progress' || b.status === 'scheduled' || b.status === 'technician_assigned'
-      );
-      setActiveBooking(active);
+      // Show up to 3 most recent bookings
+      setRecentBookings(allBookings.slice(0, 3));
     } catch (e) {
-      console.warn('Failed to load active booking on Home:', e);
+      console.warn('Failed to load bookings on Home:', e);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadActiveBooking();
-    }, [loadActiveBooking])
+      loadRecentBookings();
+    }, [loadRecentBookings])
   );
 
   const handleCategorySelect = (category: ServiceCategory) => {
+    if (category.id === 'more') {
+      router.push('/services' as any);
+      return;
+    }
     resetBooking();
     updateBooking({
       category,
@@ -91,63 +94,102 @@ export default function HomeScreen() {
     }
   };
 
+  // Build initials for avatar fallback
+  const initials = (user?.name || 'U')
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Custom Header */}
+        {/* ========== HEADER ========== */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greetingText}>Hello, {user?.name.split(' ')[0] || 'User'} 👋</Text>
-            <View style={styles.locationRow}>
-              <Ionicons name="location-outline" size={14} color={colors.primary} />
-              <Text style={styles.locationText} numberOfLines={1}>
-                {user?.address
-                  ? `${user.address.street}, ${user.address.city}`
-                  : user?.addresses[0]?.street || 'Add service address'}
-              </Text>
+          {/* Left: Hamburger + Brand logo */}
+          <View style={styles.headerLeft}>
+            {/* TODO: implement drawer navigation */}
+            <TouchableOpacity activeOpacity={0.7} style={styles.hamburgerBtn}>
+              <Ionicons name="menu-outline" size={26} color={colors.text} />
+            </TouchableOpacity>
+            <View style={styles.brandLockup}>
+              <Text style={styles.brandName}>Zevota</Text>
+              <Text style={styles.brandSub}>CARE</Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.notificationBtn}
-            onPress={() => router.push('/profile/notifications' as any)}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="notifications-outline" size={22} color={colors.text} />
-            <View style={styles.badgeDot} />
-          </TouchableOpacity>
+
+          {/* Right: Notification bell + Avatar */}
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.notificationBtn}
+              onPress={() => router.push('/profile/notifications' as any)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="notifications-outline" size={22} color={colors.text} />
+              <View style={styles.badgeDot} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push('/(tabs)/profile' as any)}
+            >
+              {user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={styles.avatarFallback}>
+                  <Text style={styles.avatarInitials}>{initials}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Subscription Plan Card */}
+        {/* ========== SUBSCRIPTION CARD ========== */}
         <SubscriptionCard
-          planName="Zevota Care Protection Plan"
-          expiryDate={user?.protectionPlanExpiry || '31 Dec 2026'}
+          planName="Premium Plan"
+          planStatus="Active"
+          walletBalance="₹1,00,000"
+          expiryDate={user?.protectionPlanExpiry || '24 May 2025'}
           onPress={() => router.push('/profile/protection' as any)}
         />
 
-        {/* Explore Services Grid */}
+        {/* ========== QUICK ACTIONS ========== */}
+        <QuickActions
+          onRequestService={() => router.push('/services' as any)}
+          onMyServices={() => router.push('/requests' as any)}
+        />
+
+        {/* ========== EXPLORE SERVICES ========== */}
         <SectionHeader
           title="Explore Services"
-          actionTitle="See All"
+          actionTitle="View All"
           onAction={() => router.push('/services' as any)}
         />
-        <ServiceGrid categories={categories.slice(0, 6)} onSelectCategory={handleCategorySelect} />
+        <ServiceGrid categories={categories.slice(0, 8)} onSelectCategory={handleCategorySelect} />
 
-        {/* Recent Request / Active Order */}
-        {activeBooking && (
+        {/* ========== PROTECTION CARD ========== */}
+        <ProtectionCard onLearnMore={() => router.push('/profile/protection' as any)} />
+
+        {/* ========== RECENT REQUESTS ========== */}
+        {recentBookings.length > 0 && (
           <>
             <SectionHeader
-              title="Recent Request"
+              title="Recent Requests"
               actionTitle="View All"
               onAction={() => router.push('/requests' as any)}
             />
-            <RecentRequestCard booking={activeBooking} onPress={handleBookingSelect} />
+            {recentBookings.map((booking) => (
+              <RecentRequestCard
+                key={booking.id}
+                booking={booking}
+                onPress={handleBookingSelect}
+              />
+            ))}
           </>
         )}
 
-        {/* Protection Plan Banner */}
-        <ProtectionCard onLearnMore={() => router.push('/profile/protection' as any)} />
-
-        {/* Dev Quick Test Reset Banner */}
+        {/* ========== DEV CONTROLS ========== */}
         <View style={styles.devBox}>
           <Text style={styles.devTitle}>Development Controls</Text>
           <TouchableOpacity style={styles.resetBtn} onPress={handleResetOnboarding} activeOpacity={0.8}>
@@ -168,6 +210,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing.xl,
   },
+
+  /* ---- Header ---- */
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -175,21 +219,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  greetingText: {
-    fontSize: typography.fontSize.xl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text,
-  },
-  locationRow: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    gap: 10,
+  },
+  hamburgerBtn: {
+    padding: 2,
+  },
+  brandLockup: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: 4,
   },
-  locationText: {
-    fontSize: typography.fontSize.xs,
-    color: colors.textSecondary,
-    maxWidth: 220,
+  brandName: {
+    fontSize: typography.fontSize.xl + 2,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.primary,
+    letterSpacing: -0.5,
+  },
+  brandSub: {
+    fontSize: typography.fontSize.xs - 2,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.textMuted,
+    letterSpacing: 2,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   notificationBtn: {
     width: 40,
@@ -211,6 +269,30 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.danger,
   },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  avatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E8F0FF',
+  },
+  avatarInitials: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.bold,
+    color: colors.white,
+  },
+
+  /* ---- Dev Controls ---- */
   devBox: {
     marginHorizontal: spacing.md,
     marginTop: spacing.md,

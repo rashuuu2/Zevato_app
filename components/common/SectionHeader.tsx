@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
@@ -15,8 +16,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({ title, actionTitle
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       {actionTitle && onAction && (
-        <TouchableOpacity onPress={onAction} activeOpacity={0.7}>
+        <TouchableOpacity onPress={onAction} activeOpacity={0.7} style={styles.actionRow}>
           <Text style={styles.action}>{actionTitle}</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.primary} />
         </TouchableOpacity>
       )}
     </View>
@@ -36,6 +38,11 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     fontWeight: typography.fontWeight.bold,
     color: colors.text,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
   },
   action: {
     fontSize: typography.fontSize.sm,

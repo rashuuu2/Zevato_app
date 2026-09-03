@@ -22,7 +22,7 @@ export const ServiceGrid: React.FC<ServiceGridProps> = ({ categories, onSelectCa
           activeOpacity={0.7}
         >
           <View style={styles.iconBox}>
-            <Ionicons name={cat.icon as any} size={28} color={colors.primary} />
+            <Ionicons name={cat.icon as any} size={26} color={colors.primary} />
           </View>
           <Text style={styles.label} numberOfLines={2}>
             {cat.name}
@@ -41,30 +41,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   item: {
-    width: '30%',
+    width: '23%',
     alignItems: 'center',
     marginBottom: spacing.md,
-    backgroundColor: colors.surface,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm + 4,
     paddingHorizontal: spacing.xs,
-    borderRadius: spacing.radiusMd,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   iconBox: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.primaryLight,
+    borderRadius: spacing.radiusMd,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xs + 2,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   label: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.semibold,
+    fontSize: typography.fontSize.xs - 1,
+    fontWeight: typography.fontWeight.medium,
     color: colors.text,
     textAlign: 'center',
+    lineHeight: 14,
   },
 });
 

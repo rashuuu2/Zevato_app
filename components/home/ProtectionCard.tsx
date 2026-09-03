@@ -14,19 +14,19 @@ export const ProtectionCard: React.FC<ProtectionCardProps> = ({ onLearnMore }) =
     <View style={styles.card}>
       <View style={styles.content}>
         <View style={styles.iconBox}>
-          <Ionicons name="shield-half-outline" size={28} color={colors.primary} />
+          <Ionicons name="shield-checkmark" size={28} color={colors.primary} />
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Zevota Appliance Protection</Text>
+          <Text style={styles.title}>Worry Free. We've Got You!</Text>
           <Text style={styles.description}>
-            Zero labor charges, free breakdown visits & 100% genuine spare parts guarantee.
+            Trusted experts, easy booking and transparent pricing.
           </Text>
-          {onLearnMore && (
-            <TouchableOpacity onPress={onLearnMore} style={styles.btn} activeOpacity={0.7}>
-              <Text style={styles.btnText}>Explore Plans</Text>
-            </TouchableOpacity>
-          )}
         </View>
+        {onLearnMore && (
+          <TouchableOpacity onPress={onLearnMore} style={styles.btn} activeOpacity={0.7}>
+            <Text style={styles.btnText}>Know More</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -38,13 +38,13 @@ const styles = StyleSheet.create({
     borderRadius: spacing.radiusLg,
     padding: spacing.md,
     marginHorizontal: spacing.md,
-    marginVertical: spacing.md,
+    marginTop: spacing.md,
     borderWidth: 1,
     borderColor: '#C7D9FF',
   },
   content: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   iconBox: {
     width: 48,
@@ -53,25 +53,34 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: spacing.sm + 4,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   textContainer: {
     flex: 1,
   },
   title: {
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm + 1,
     fontWeight: typography.fontWeight.bold,
     color: colors.text,
   },
   description: {
-    fontSize: typography.fontSize.xs + 1,
+    fontSize: typography.fontSize.xs,
     color: colors.textSecondary,
-    marginTop: 4,
-    lineHeight: 18,
+    marginTop: 2,
+    lineHeight: 16,
   },
   btn: {
-    marginTop: spacing.sm,
-    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: spacing.radiusFull,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
   },
   btnText: {
     fontSize: typography.fontSize.xs,
