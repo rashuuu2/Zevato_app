@@ -2,14 +2,15 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 
 export function getApiBaseUrl(): string {
+  // 1. Cloud production API URL (e.g. Railway)
   if (process.env.EXPO_PUBLIC_API_URL) {
     const envUrl = process.env.EXPO_PUBLIC_API_URL;
-    if (!envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    if (envUrl.startsWith('https://') || (!envUrl.includes('localhost') && !envUrl.includes('127.0.0.1'))) {
       return envUrl;
     }
   }
 
-  // Auto-detect host IP when running in Expo Go or dev client on device/emulator
+  // 2. Auto-detect host IP dynamically from Metro / Expo Go connection (local dev fallback)
   const hostUri =
     Constants.expoConfig?.hostUri ||
     (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
@@ -22,11 +23,7 @@ export function getApiBaseUrl(): string {
     }
   }
 
-  if (Platform.OS === 'android') {
-    return 'http://10.1.2.116:5001/api';
-  }
-
-  return 'http://localhost:5001/api';
+  return 'https://zevatoapp-production.up.railway.app/api';
 }
 
 export const API_BASE_URL = getApiBaseUrl();

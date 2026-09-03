@@ -1,13 +1,19 @@
 import React, { useEffect } from 'react';
+import { LogBox } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ClerkProvider, ClerkLoaded } from '@clerk/expo';
+import { ClerkProvider } from '@clerk/expo';
 import { tokenCache } from '@/utils/tokenCache';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '@clerk/expo';
 import { colors } from '@/constants/colors';
 import { registerForPushNotificationsAsync } from '@/services/notifications';
+
+// Suppress internal Expo Router useLinking async resolution notice in React 19 DEV
+LogBox.ignoreLogs([
+  "Can't perform a React state update on a component that hasn't mounted yet",
+]);
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -48,9 +54,7 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-      <ClerkLoaded>
-        <RootLayoutContent />
-      </ClerkLoaded>
+      <RootLayoutContent />
     </ClerkProvider>
   );
 }
