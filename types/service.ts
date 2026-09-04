@@ -2,25 +2,49 @@ export interface ServiceCategory {
   id: string;
   name: string;
   icon: string;
-  description: string;
+  description?: string;
   itemCount?: number;
   popular?: boolean;
+  parentId?: string | null;
+  children?: ServiceCategory[];
 }
 
 export interface Brand {
   id: string;
   name: string;
-  logo: string;
-  categories: string[];
+  logo?: string | null;
+  categories?: string[];
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  modelNumber: string;
+  sizeLabel: string;
+  sizeValue?: number | null;
+  price: number;
+  originalPrice?: number | null;
+  releaseYear?: number | null;
+  specsJson?: string | null;
+  specs?: Record<string, any>;
+  image?: string | null;
+  inStock?: boolean;
 }
 
 export interface Product {
   id: string;
   name: string;
+  slug?: string | null;
   categoryId: string;
   brandId?: string;
-  image: string;
-  startingPrice: number;
+  image?: string | null;
+  description?: string | null;
+  startingPrice?: number | null;
+  featuresJson?: string | null;
+  features?: string[];
+  availableSizes?: number[];
+  variantCount?: number;
+  variants?: ProductVariant[];
 }
 
 export interface ServiceFeature {

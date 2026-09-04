@@ -53,14 +53,19 @@ model Address {
 }
 
 model Category {
-  id          String    @id
+  id          String     @id
   name        String
-  icon        String
-  description String
-  itemCount   Int       @default(0)
-  popular     Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  icon        String?
+  description String?
+  itemCount   Int?       @default(0)
+  popular     Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Self-relation for sub-categories
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
 
   products    Product[]
   services    Service[]
@@ -70,7 +75,7 @@ model Category {
 model Brand {
   id        String    @id
   name      String
-  logo      String
+  logo      String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -79,18 +84,45 @@ model Brand {
 }
 
 model Product {
-  id            String   @id
-  categoryId    String
-  category      Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  brandId       String
-  brand         Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  id            String           @id @default(uuid())
   name          String
-  image         String
-  startingPrice Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  slug          String?          @unique
+  image         String?
+  description   String?
+  startingPrice Float?
+  featuresJson  String?
+
+  categoryId    String
+  category      Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  brandId       String
+  brand         Brand            @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  variants      ProductVariant[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   bookings      Booking[]
+}
+
+model ProductVariant {
+  id            String    @id @default(uuid())
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  modelNumber   String
+  sizeLabel     String
+  sizeValue     Int?
+  price         Float
+  originalPrice Float?
+  releaseYear   Int?
+  specsJson     String?
+  image         String?
+  inStock       Boolean   @default(true)
+
+  bookings      Booking[]
+
+  @@index([productId])
 }
 
 model Service {
@@ -158,6 +190,8 @@ model Booking {
   brand                  Brand?                 @relation(fields: [brandId], references: [id])
   productId              String?
   product                Product?               @relation(fields: [productId], references: [id])
+  productVariantId       String?
+  productVariant         ProductVariant?        @relation(fields: [productVariantId], references: [id])
   addressId              String
   address                Address                @relation(fields: [addressId], references: [id])
   technicianId           String?

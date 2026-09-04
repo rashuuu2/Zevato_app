@@ -14,14 +14,18 @@ import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { typography } from '@/constants/typography';
 
-// Quick presets per category for common model types
 const MODEL_PRESETS: Record<string, string[]> = {
   ac: ['Split AC 1 Ton', 'Split AC 1.5 Ton', 'Split AC 2 Ton', 'Window AC 1 Ton', 'Window AC 1.5 Ton', 'Cassette AC', 'Portable AC'],
+  acs: ['Split AC 1 Ton', 'Split AC 1.5 Ton', 'Split AC 2 Ton', 'Window AC 1 Ton', 'Window AC 1.5 Ton', 'Cassette AC', 'Portable AC'],
   'washing-machine': ['Front Load 6 kg', 'Front Load 7 kg', 'Front Load 8 kg', 'Top Load 6.5 kg', 'Top Load 7.5 kg', 'Semi-Automatic', 'Fully Automatic'],
+  'washing-machines': ['Front Load 6 kg', 'Front Load 7 kg', 'Front Load 8 kg', 'Top Load 6.5 kg', 'Top Load 7.5 kg', 'Semi-Automatic', 'Fully Automatic'],
   refrigerator: ['Single Door', 'Double Door', 'Side by Side', 'French Door', 'Mini Fridge', 'Deep Freezer'],
+  refrigerators: ['Single Door', 'Double Door', 'Side by Side', 'French Door', 'Mini Fridge', 'Deep Freezer'],
   tv: ['LED 32"', 'LED 43"', 'LED 55"', 'OLED 55"', 'OLED 65"', 'QLED 55"', 'QLED 65"', 'QLED 75"'],
+  'tv-video-audio': ['LED 32"', 'LED 43"', 'LED 55"', 'OLED 55"', 'OLED 65"', 'QLED 55"', 'QLED 65"', 'QLED 75"'],
   'water-purifier': ['RO + UV', 'RO + UV + UF', 'Gravity Based', 'UV Only', 'RO + UV + TDS Controller'],
   electrical: ['Ceiling Fan', 'Switchboard', 'MCB / Fuse Box', 'Wiring Repair', 'Inverter / UPS', 'Geyser'],
+  electricals: ['Ceiling Fan', 'Switchboard', 'MCB / Fuse Box', 'Wiring Repair', 'Inverter / UPS', 'Geyser'],
 };
 
 export default function ModelInputScreen() {

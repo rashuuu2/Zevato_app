@@ -36,6 +36,7 @@ export const bookingService = {
         categoryId: bookingData.categoryId,
         brandId: bookingData.brandId,
         productId: bookingData.productId,
+        productVariantId: (bookingData as any).productVariantId,
         addressId: bookingData.address?.id || 'addr-1',
         address: bookingData.address,
         scheduledDate: bookingData.scheduledDate || 'Tomorrow',

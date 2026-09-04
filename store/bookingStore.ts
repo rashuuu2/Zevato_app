@@ -11,7 +11,9 @@ export interface BookingDraft {
   brandId?: string;
   brandName?: string;
 
-  // Step 3: Model
+  // Step 3: Model & Series
+  productId?: string;
+  productVariantId?: string;
   modelNumber?: string;
   productName?: string;
 

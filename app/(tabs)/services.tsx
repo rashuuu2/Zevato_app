@@ -15,6 +15,7 @@ import masterCategories, {
   MasterCategory,
   SubServiceItem,
 } from '@/data/categoriesWithSubServices';
+import CatalogIcon from '@/components/common/CatalogIcon';
 import useBooking from '@/hooks/useBooking';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
@@ -59,16 +60,20 @@ export default function ServicesScreen() {
     size = 22,
     color = colors.primary
   ) => {
-    if (family === 'material') {
-      return (
-        <MaterialCommunityIcons
-          name={iconName as any}
-          size={size}
-          color={color}
-        />
-      );
-    }
-    return <Ionicons name={iconName as any} size={size} color={color} />;
+    return (
+      <CatalogIcon
+        name={iconName}
+        size={size}
+        color={color}
+        family={
+          family === 'material'
+            ? 'MaterialCommunityIcons'
+            : family === 'ionicons'
+            ? 'Ionicons'
+            : undefined
+        }
+      />
+    );
   };
 
   return (

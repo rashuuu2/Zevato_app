@@ -10,7 +10,15 @@ export function getApiBaseUrl(): string {
     }
   }
 
-  // 2. Auto-detect host IP dynamically from Metro / Expo Go connection (local dev fallback)
+  // 2. Web local dev check
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const hostname = window.location?.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:5001/api';
+    }
+  }
+
+  // 3. Auto-detect host IP dynamically from Metro / Expo Go connection (local dev fallback)
   const hostUri =
     Constants.expoConfig?.hostUri ||
     (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
@@ -21,6 +29,11 @@ export function getApiBaseUrl(): string {
     if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
       return `http://${hostIp}:5001/api`;
     }
+  }
+
+  // Fallback to localhost if in dev
+  if (__DEV__) {
+    return 'http://localhost:5001/api';
   }
 
   return 'https://zevatoapp-production.up.railway.app/api';

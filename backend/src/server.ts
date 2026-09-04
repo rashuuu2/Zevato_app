@@ -29,6 +29,7 @@ app.get('/api/health', (req, res) => {
 
 // Mounting route groups
 app.use('/api', catalogRoutes);
+app.use('/', catalogRoutes);
 app.use('/api', userRoutes);
 app.use('/api', bookingRoutes);
 app.use('/api', paymentRoutes);

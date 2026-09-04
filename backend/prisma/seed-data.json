@@ -1,0 +1,171 @@
+{
+  "_readme": {
+    "purpose": "Seed data for Prisma DB, structured to match the mobile UI's Category -> Sub-category -> Brand -> Series(Product) -> Variant hierarchy.",
+    "data_confidence": {
+      "fully_verified": "categories.electronics_appliances.subcategories.tv_video_audio (all brands, series, models, sizes, specs, India pricing) — sourced from Samsung India's official 2025 lineup announcement and LG/Sony official spec sheets as of Sep 2026 knowledge.",
+      "scaffolded_needs_verification": "All other sub-categories (kitchen appliances, refrigerators, ACs, washing machines, computers, cameras, plumbing, electricals, cleaning, furniture, car services) contain REAL brand names only. Model numbers, prices, and specs in those sections are placeholders marked \"VERIFY\" and must be researched/confirmed before going to production — appliance pricing changes seasonally and varies by region."
+    },
+    "how_to_use": "Run this through a seed script (prisma db seed) after applying schema-additions.prisma. Categories with a parentId create the sub-category relationship. Each 'series' object becomes a Product row; each entry in 'variants' becomes a ProductVariant row linked to it."
+  },
+
+  "categories": [
+    { "id": "electronics-appliances", "name": "Electronics & Appliances", "icon": "monitor", "description": "Repair, install and maintain all your electronic items with ease.", "popular": true, "parentId": null },
+    { "id": "car-services", "name": "Car Services", "icon": "car", "parentId": null },
+    { "id": "plumbing", "name": "Plumbing", "icon": "faucet", "parentId": null },
+    { "id": "electricals", "name": "Electricals", "icon": "flash", "parentId": null },
+    { "id": "cleaning", "name": "Cleaning", "icon": "broom", "parentId": null },
+    { "id": "furniture", "name": "Furniture", "icon": "sofa", "parentId": null },
+    { "id": "more-services", "name": "More Services", "icon": "dots-grid", "parentId": null },
+
+    { "id": "tv-video-audio", "name": "TV, Video & Audio", "icon": "monitor-speaker", "parentId": "electronics-appliances" },
+    { "id": "kitchen-appliances", "name": "Kitchen & Other Appliances", "icon": "blender", "parentId": "electronics-appliances" },
+    { "id": "computers-laptops", "name": "Computers & Laptops", "icon": "laptop", "parentId": "electronics-appliances" },
+    { "id": "cameras-lenses", "name": "Cameras & Lenses", "icon": "camera", "parentId": "electronics-appliances" },
+    { "id": "games-entertainment", "name": "Games & Entertainment", "icon": "game-controller", "parentId": "electronics-appliances" },
+    { "id": "refrigerators", "name": "Refrigerators", "icon": "fridge", "parentId": "electronics-appliances" },
+    { "id": "computer-accessories", "name": "Computer Accessories", "icon": "keyboard", "parentId": "electronics-appliances" },
+    { "id": "printers-scanners", "name": "Printers & Scanners", "icon": "printer", "parentId": "electronics-appliances" },
+    { "id": "acs", "name": "ACs", "icon": "snow", "parentId": "electronics-appliances" },
+    { "id": "hard-disks-storage", "name": "Hard Disks & Storage", "icon": "harddisk", "parentId": "electronics-appliances" },
+    { "id": "washing-machines", "name": "Washing Machines", "icon": "washing-machine", "parentId": "electronics-appliances" }
+  ],
+
+  "brands": {
+    "tv": [
+      { "id": "samsung", "name": "Samsung", "logo": "samsung.png" },
+      { "id": "lg", "name": "LG", "logo": "lg.png" },
+      { "id": "sony", "name": "Sony", "logo": "sony.png" },
+      { "id": "xiaomi", "name": "Xiaomi", "logo": "xiaomi.png" },
+      { "id": "tcl", "name": "TCL", "logo": "tcl.png" },
+      { "id": "vu", "name": "Vu", "logo": "vu.png" },
+      { "id": "panasonic", "name": "Panasonic", "logo": "panasonic.png" },
+      { "id": "haier", "name": "Haier", "logo": "haier.png" },
+      { "id": "hisense", "name": "Hisense", "logo": "hisense.png" },
+      { "id": "onida", "name": "Onida", "logo": "onida.png" },
+      { "id": "philips", "name": "Philips", "logo": "philips.png" },
+      { "id": "bpl", "name": "BPL", "logo": "bpl.png" }
+    ],
+    "refrigerator_ac_washingmachine_VERIFY": [
+      { "id": "lg", "name": "LG" },
+      { "id": "samsung", "name": "Samsung" },
+      { "id": "whirlpool", "name": "Whirlpool" },
+      { "id": "godrej", "name": "Godrej" },
+      { "id": "haier", "name": "Haier" },
+      { "id": "voltas", "name": "Voltas" },
+      { "id": "daikin", "name": "Daikin" },
+      { "id": "hitachi", "name": "Hitachi" },
+      { "id": "blue-star", "name": "Blue Star" },
+      { "id": "bosch", "name": "Bosch" },
+      { "id": "ifb", "name": "IFB" },
+      { "id": "panasonic", "name": "Panasonic" }
+    ]
+  },
+
+  "tv_catalog_verified": {
+    "note": "Real Samsung 2025 India TV lineup, official launch data. LG/Sony entries use well-established current-generation series names; exact per-size India pricing for LG/Sony should be re-verified against samsung.com/lg.com/sony.co.in before production since it fluctuates.",
+    "samsung": [
+      {
+        "series_id": "samsung-neo-qled-8k",
+        "name": "Neo QLED 8K Series",
+        "description": "Flagship 8K mini-LED lineup with NQ8 AI Gen3 processor and 8K AI Upscaling Pro.",
+        "featuresJson": ["8K AI Upscaling Pro", "Neo Quantum HDR 8K Pro", "Quantum Matrix Technology PRO"],
+        "variants": [
+          { "modelNumber": "QN990F", "sizeLabel": "85 inch", "sizeValue": 85, "price": 899990, "releaseYear": 2025, "specsJson": { "resolution": "8K Ultra HD", "processor": "NQ8 AI Gen3", "audio": "Dolby Atmos" } },
+          { "modelNumber": "QN900F", "sizeLabel": "75 inch", "sizeValue": 75, "price": 649990, "releaseYear": 2025, "specsJson": { "resolution": "8K Ultra HD", "processor": "NQ8 AI Gen3", "audio": "Dolby Atmos" } }
+        ]
+      },
+      {
+        "series_id": "samsung-neo-qled-4k",
+        "name": "Neo QLED 4K Series",
+        "description": "Next level brightness, contrast and details with Mini LED technology.",
+        "featuresJson": ["165Hz refresh rate", "Glare-Free coating", "Neo Quantum HDR+", "Q-Symphony"],
+        "variants": [
+          { "modelNumber": "QN90F", "sizeLabel": "55 inch", "sizeValue": 55, "price": 149990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD", "processor": "NQ4 AI Gen3", "refreshRate": "165Hz", "hdr": "Neo Quantum HDR+", "audio": "Dolby Atmos" } },
+          { "modelNumber": "QN90F", "sizeLabel": "65 inch", "sizeValue": 65, "price": 189990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD", "processor": "NQ4 AI Gen3", "refreshRate": "165Hz", "hdr": "Neo Quantum HDR+", "audio": "Dolby Atmos" } },
+          { "modelNumber": "QN90F", "sizeLabel": "75 inch", "sizeValue": 75, "price": 259990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD", "processor": "NQ4 AI Gen3", "refreshRate": "165Hz" } },
+          { "modelNumber": "QN90F", "sizeLabel": "85 inch", "sizeValue": 85, "price": 359990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD", "processor": "NQ4 AI Gen3", "refreshRate": "165Hz" } },
+          { "modelNumber": "QN85F", "sizeLabel": "65 inch", "sizeValue": 65, "price": 159990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD", "hdr": "Neo Quantum HDR" } },
+          { "modelNumber": "QN80F", "sizeLabel": "55 inch", "sizeValue": 55, "price": 109990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD", "hdr": "Neo Quantum HDR" } },
+          { "modelNumber": "QN70F", "sizeLabel": "50 inch", "sizeValue": 50, "price": 89990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } }
+        ]
+      },
+      {
+        "series_id": "samsung-crystal-uhd",
+        "name": "Crystal UHD Series",
+        "description": "4K UHD TVs with crystal clear picture and smart features.",
+        "featuresJson": ["Crystal Processor 4K", "PurColor"],
+        "variants": [
+          { "modelNumber": "CU8000", "sizeLabel": "43 inch", "sizeValue": 43, "price": 49490, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "CU8000", "sizeLabel": "50 inch", "sizeValue": 50, "price": 56990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "CU8000", "sizeLabel": "55 inch", "sizeValue": 55, "price": 62990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "CU8000", "sizeLabel": "65 inch", "sizeValue": 65, "price": 79990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "CU8000", "sizeLabel": "75 inch", "sizeValue": 75, "price": 109990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } }
+        ]
+      },
+      {
+        "series_id": "samsung-the-frame",
+        "name": "The Frame Series",
+        "description": "TV when it's on. Art when it's off. Personalize your space.",
+        "featuresJson": ["Art Mode", "Customizable Bezel", "Matte Display"],
+        "variants": [
+          { "modelNumber": "LS03F", "sizeLabel": "43 inch", "sizeValue": 43, "price": 63990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "LS03F", "sizeLabel": "50 inch", "sizeValue": 50, "price": 79990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "LS03F", "sizeLabel": "55 inch", "sizeValue": 55, "price": 94990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "LS03F", "sizeLabel": "65 inch", "sizeValue": 65, "price": 129990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } },
+          { "modelNumber": "LS03F", "sizeLabel": "75 inch", "sizeValue": 75, "price": 189990, "releaseYear": 2025, "specsJson": { "resolution": "4K Ultra HD" } }
+        ]
+      },
+      {
+        "series_id": "samsung-led",
+        "name": "LED Series",
+        "description": "Reliable performance with stunning HD picture quality.",
+        "featuresJson": ["HD Ready / Full HD options"],
+        "variants": [
+          { "modelNumber": "T4380", "sizeLabel": "32 inch", "sizeValue": 32, "price": 15990, "specsJson": { "resolution": "HD Ready" } },
+          { "modelNumber": "T4380", "sizeLabel": "40 inch", "sizeValue": 40, "price": 24990, "specsJson": { "resolution": "Full HD" } },
+          { "modelNumber": "T4380", "sizeLabel": "43 inch", "sizeValue": 43, "price": 27990, "specsJson": { "resolution": "Full HD" } },
+          { "modelNumber": "T4380", "sizeLabel": "50 inch", "sizeValue": 50, "price": 34990, "specsJson": { "resolution": "Full HD" } },
+          { "modelNumber": "T4380", "sizeLabel": "55 inch", "sizeValue": 55, "price": 42990, "specsJson": { "resolution": "Full HD" } },
+          { "modelNumber": "T4380", "sizeLabel": "65 inch", "sizeValue": 65, "price": 59990, "specsJson": { "resolution": "Full HD" } }
+        ]
+      },
+      {
+        "series_id": "samsung-smart-monitor",
+        "name": "Smart Monitor Series",
+        "description": "Do more with your TV. Work, watch and connect with ease.",
+        "featuresJson": ["Built-in webcam support", "Wireless DeX", "Office 365"],
+        "variants": [
+          { "modelNumber": "M8", "sizeLabel": "32 inch", "sizeValue": 32, "price": 44990, "specsJson": { "resolution": "4K UHD" } },
+          { "modelNumber": "M7", "sizeLabel": "43 inch", "sizeValue": 43, "price": 39990, "specsJson": { "resolution": "4K UHD" } }
+        ]
+      }
+    ],
+    "other_brands_sample": {
+      "note": "One representative series per brand shown; expand with full catalog before production.",
+      "lg": [
+        { "series_id": "lg-c-series-oled", "name": "OLED evo C Series", "description": "Self-lit pixels with α9 AI Processor for deep blacks and rich color.", "variants": [
+          { "modelNumber": "C5", "sizeLabel": "55 inch", "sizeValue": 55, "price": 149990, "specsJson": { "resolution": "4K OLED" } },
+          { "modelNumber": "C5", "sizeLabel": "65 inch", "sizeValue": 65, "price": 199990, "specsJson": { "resolution": "4K OLED" } }
+        ]}
+      ],
+      "sony": [
+        { "series_id": "sony-bravia", "name": "BRAVIA Series", "description": "Cognitive Processor XR for lifelike picture and immersive sound.", "variants": [
+          { "modelNumber": "BRAVIA 7", "sizeLabel": "55 inch", "sizeValue": 55, "price": 169990, "specsJson": { "resolution": "4K Mini LED" } }
+        ]}
+      ]
+    }
+  },
+
+  "other_categories_scaffold_VERIFY": {
+    "note": "Real brand names, placeholder specs/prices — verify before use.",
+    "acs": { "brands": ["LG", "Samsung", "Voltas", "Daikin", "Hitachi", "Blue Star", "Carrier", "Panasonic"], "sample_series": ["5-Star Inverter Split AC", "3-Star Window AC"] },
+    "refrigerators": { "brands": ["LG", "Samsung", "Whirlpool", "Godrej", "Haier", "Bosch"], "sample_series": ["Double Door Frost-Free", "Single Door Direct Cool", "Side-by-Side"] },
+    "washing_machines": { "brands": ["LG", "Samsung", "IFB", "Bosch", "Whirlpool", "Haier"], "sample_series": ["Front Load Fully Automatic", "Top Load Fully Automatic", "Semi Automatic"] },
+    "kitchen_appliances": { "brands": ["Prestige", "Bajaj", "Philips", "Preethi", "Butterfly"], "sample_types": ["Mixer Grinder", "Microwave Oven", "Chimney", "Water Purifier"] },
+    "plumbing_services": { "sample_service_types": ["Tap Repair", "Pipe Leak Fixing", "Drain Cleaning", "Water Tank Installation"] },
+    "electricals_services": { "sample_service_types": ["Wiring Repair", "Switchboard Installation", "Fan Installation", "MCB/Fuse Repair"] },
+    "cleaning_services": { "sample_service_types": ["Deep Home Cleaning", "Sofa Cleaning", "Pest Control", "Bathroom Deep Clean"] },
+    "car_services": { "sample_service_types": ["Car Wash", "Car AC Service", "Detailing", "General Checkup"] },
+    "furniture_services": { "sample_service_types": ["Furniture Assembly", "Sofa Repair", "Polishing"] }
+  }
+}

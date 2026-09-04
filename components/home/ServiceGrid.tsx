@@ -30,9 +30,11 @@ const renderCategoryIcon = (category: ServiceCategory) => {
         </View>
       );
     case 'more':
+    case 'more-services':
       return <MaterialCommunityIcons name="dots-grid" size={iconSize} color={iconColor} />;
     case 'electronics':
-      return <Ionicons name="tv-outline" size={iconSize} color={iconColor} />;
+    case 'electronics-appliances':
+      return <MaterialCommunityIcons name="monitor" size={iconSize} color={iconColor} />;
     case 'electricals':
       return <Ionicons name="flash-outline" size={iconSize} color={iconColor} />;
     case 'car-services':

@@ -3,13 +3,44 @@ import prisma from '../db';
 
 export const getCategories = async (req: Request, res: Response): Promise<void> => {
   try {
+    const { parentId } = req.query;
+    const where: any = {};
+
+    // Treat missing, empty, or string "null" as top-level categories (parentId IS NULL)
+    if (parentId === undefined || parentId === 'null' || parentId === null || parentId === '') {
+      where.parentId = null;
+    } else if (parentId === 'all') {
+      // Return all categories without hierarchy filtering
+    } else {
+      where.parentId = String(parentId);
+    }
+
     const categories = await prisma.category.findMany({
+      where,
+      include: {
+        children: true,
+      },
       orderBy: { name: 'asc' },
     });
+
     res.json(categories);
   } catch (error) {
     console.error('getCategories error:', error);
     res.status(500).json({ error: 'Failed to fetch categories' });
+  }
+};
+
+export const getSubcategories = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const subcategories = await prisma.category.findMany({
+      where: { parentId: id },
+      orderBy: { name: 'asc' },
+    });
+    res.json(subcategories);
+  } catch (error) {
+    console.error('getSubcategories error:', error);
+    res.status(500).json({ error: 'Failed to fetch subcategories' });
   }
 };
 
@@ -18,18 +49,38 @@ export const getBrands = async (req: Request, res: Response): Promise<void> => {
     const { categoryId } = req.query;
     let brands;
 
-    if (categoryId && typeof categoryId === 'string') {
+    if (categoryId === 'tv-video-audio') {
+      // For TV category, return all 12 verified TV brands from the catalog
+      const tvBrandIds = [
+        'samsung', 'lg', 'sony', 'xiaomi', 'tcl', 'vu',
+        'panasonic', 'haier', 'hisense', 'onida', 'philips', 'bpl'
+      ];
+      brands = await prisma.brand.findMany({
+        where: { id: { in: tvBrandIds } },
+        orderBy: { name: 'asc' },
+      });
+    } else if (categoryId && typeof categoryId === 'string') {
       // Find products matching categoryId and get unique brands
       const products = await prisma.product.findMany({
         where: { categoryId },
         select: { brandId: true },
       });
       const brandIds = Array.from(new Set(products.map((p) => p.brandId)));
-      brands = await prisma.brand.findMany({
-        where: { id: { in: brandIds } },
-      });
+
+      if (brandIds.length > 0) {
+        brands = await prisma.brand.findMany({
+          where: { id: { in: brandIds } },
+          orderBy: { name: 'asc' },
+        });
+      } else {
+        brands = await prisma.brand.findMany({
+          orderBy: { name: 'asc' },
+        });
+      }
     } else {
-      brands = await prisma.brand.findMany();
+      brands = await prisma.brand.findMany({
+        orderBy: { name: 'asc' },
+      });
     }
 
     res.json(brands);
@@ -41,7 +92,10 @@ export const getBrands = async (req: Request, res: Response): Promise<void> => {
 
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { categoryId, brandId } = req.query;
+    // Support categoryId from either route param /categories/:id/products or query ?categoryId=
+    const categoryId = req.params.id || req.query.categoryId;
+    const { brandId } = req.query;
+
     const where: any = {};
     if (categoryId && typeof categoryId === 'string') where.categoryId = categoryId;
     if (brandId && typeof brandId === 'string') where.brandId = brandId;
@@ -51,10 +105,40 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
       include: {
         category: true,
         brand: true,
+        variants: {
+          orderBy: { sizeValue: 'asc' },
+        },
       },
+      orderBy: { name: 'asc' },
     });
 
-    res.json(products);
+    const formatted = products.map((p) => {
+      let features: string[] = [];
+      try {
+        features = JSON.parse(p.featuresJson || '[]');
+      } catch {
+        features = [];
+      }
+
+      const sizeValues = Array.from(
+        new Set(p.variants.map((v) => v.sizeValue).filter((v): v is number => typeof v === 'number'))
+      ).sort((a, b) => a - b);
+
+      const lowestPrice =
+        p.variants.length > 0
+          ? Math.min(...p.variants.map((v) => v.price))
+          : p.startingPrice;
+
+      return {
+        ...p,
+        startingPrice: lowestPrice,
+        features,
+        availableSizes: sizeValues,
+        variantCount: p.variants.length,
+      };
+    });
+
+    res.json(formatted);
   } catch (error) {
     console.error('getProducts error:', error);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -69,6 +153,9 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
       include: {
         category: true,
         brand: true,
+        variants: {
+          orderBy: { sizeValue: 'asc' },
+        },
       },
     });
 
@@ -77,10 +164,69 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    res.json(product);
+    let features: string[] = [];
+    try {
+      features = JSON.parse(product.featuresJson || '[]');
+    } catch {
+      features = [];
+    }
+
+    const sizeValues = Array.from(
+      new Set(product.variants.map((v) => v.sizeValue).filter((v): v is number => typeof v === 'number'))
+    ).sort((a, b) => a - b);
+
+    res.json({
+      ...product,
+      features,
+      availableSizes: sizeValues,
+      variantCount: product.variants.length,
+    });
   } catch (error) {
     console.error('getProductById error:', error);
     res.status(500).json({ error: 'Failed to fetch product' });
+  }
+};
+
+export const getProductVariants = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { size } = req.query;
+
+    const where: any = { productId: id };
+    if (size !== undefined && size !== '' && !isNaN(Number(size))) {
+      where.sizeValue = Number(size);
+    }
+
+    const variants = await prisma.productVariant.findMany({
+      where,
+      include: {
+        product: {
+          include: {
+            brand: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: [{ sizeValue: 'asc' }, { price: 'asc' }],
+    });
+
+    const formatted = variants.map((v) => {
+      let specs: Record<string, any> = {};
+      try {
+        specs = JSON.parse(v.specsJson || '{}');
+      } catch {
+        specs = {};
+      }
+      return {
+        ...v,
+        specs,
+      };
+    });
+
+    res.json(formatted);
+  } catch (error) {
+    console.error('getProductVariants error:', error);
+    res.status(500).json({ error: 'Failed to fetch product variants' });
   }
 };
 
@@ -98,7 +244,6 @@ export const getServices = async (req: Request, res: Response): Promise<void> =>
       },
     });
 
-    // Format options features from JSON string to array
     const formatted = services.map((s) => ({
       ...s,
       options: s.options.map((opt) => ({

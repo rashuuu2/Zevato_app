@@ -1,326 +1,236 @@
 import { PrismaClient } from '@prisma/client';
+import path from 'path';
+import fs from 'fs';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting Zevota database seed...');
+  console.log('🌱 Starting Zevota database seed with real catalog hierarchy...');
 
-  // 1. Seed Categories
-  const categories = [
-    // New categories matching the target home screen design
-    {
-      id: 'electronics',
-      name: 'Electronics',
-      icon: 'tv-outline',
-      description: 'TV, laptop, computer & display repair and servicing',
-      itemCount: 12,
-      popular: true,
-    },
-    {
-      id: 'appliances',
-      name: 'Appliances',
-      icon: 'home-outline',
-      description: 'AC, washing machine, refrigerator & kitchen appliance repair',
-      itemCount: 18,
-      popular: true,
-    },
-    {
-      id: 'plumbing',
-      name: 'Plumbing',
-      icon: 'water-outline',
-      description: 'Pipe fitting, leak repair, tap & drain fixing',
-      itemCount: 10,
-      popular: true,
-    },
-    {
-      id: 'electricals',
-      name: 'Electricals',
-      icon: 'flash-outline',
-      description: 'Wiring, switchboards, fan & light installation',
-      itemCount: 15,
-      popular: true,
-    },
-    {
-      id: 'car-services',
-      name: 'Car Services',
-      icon: 'car-outline',
-      description: 'Car wash, detailing, AC service & general maintenance',
-      itemCount: 8,
-      popular: false,
-    },
-    {
-      id: 'cleaning',
-      name: 'Cleaning',
-      icon: 'sparkles-outline',
-      description: 'Deep cleaning, sofa cleaning, pest control & sanitization',
-      itemCount: 14,
-      popular: true,
-    },
-    {
-      id: 'furniture',
-      name: 'Furniture',
-      icon: 'bed-outline',
-      description: 'Assembly, repair, polishing & carpentry work',
-      itemCount: 9,
-      popular: false,
-    },
-    {
-      id: 'more',
-      name: 'More',
-      icon: 'grid-outline',
-      description: 'Browse all available service categories',
-      itemCount: 0,
-      popular: false,
-    },
-    // Legacy categories kept for existing product/service foreign keys
-    {
-      id: 'ac',
-      name: 'Air Conditioner',
-      icon: 'snow-outline',
-      description: 'Jet service, repair, gas refill & installation',
-      itemCount: 14,
-      popular: true,
-    },
-    {
-      id: 'washing-machine',
-      name: 'Washing Machine',
-      icon: 'aperture-outline',
-      description: 'Drum cleaning, repair, motor & drainage fixes',
-      itemCount: 10,
-      popular: true,
-    },
-    {
-      id: 'refrigerator',
-      name: 'Refrigerator',
-      icon: 'cube-outline',
-      description: 'Cooling check, gas charging & compressor repair',
-      itemCount: 8,
-      popular: true,
-    },
-    {
-      id: 'tv',
-      name: 'Television & Audio',
-      icon: 'tv-outline',
-      description: 'Wall mounting, panel repair & display troubleshooting',
-      itemCount: 12,
-      popular: false,
-    },
-    {
-      id: 'water-purifier',
-      name: 'Water Purifier',
-      icon: 'water-outline',
-      description: 'Filter replacement, RO service & leak repair',
-      itemCount: 6,
-      popular: true,
-    },
-    {
-      id: 'electrical',
-      name: 'Electrical Services',
-      icon: 'flash-outline',
-      description: 'Wiring, switchboards, fan & light installation',
-      itemCount: 18,
-      popular: false,
-    },
-  ];
+  // Load seed-data.json
+  const seedDataPath = path.join(__dirname, 'seed-data.json');
+  const seedData = JSON.parse(fs.readFileSync(seedDataPath, 'utf8'));
 
-  for (const cat of categories) {
+  // 1. Seed Categories: top-level first (parentId: null), then sub-categories
+  console.log('📦 Seeding Categories...');
+  const topLevelCategories = seedData.categories.filter((c: any) => !c.parentId);
+  const subCategories = seedData.categories.filter((c: any) => !!c.parentId);
+
+  for (const cat of topLevelCategories) {
     await prisma.category.upsert({
       where: { id: cat.id },
-      update: cat,
-      create: cat,
+      update: {
+        name: cat.name,
+        icon: cat.icon || null,
+        description: cat.description || null,
+        popular: !!cat.popular,
+        parentId: null,
+      },
+      create: {
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon || null,
+        description: cat.description || null,
+        popular: !!cat.popular,
+        parentId: null,
+      },
     });
   }
-  console.log('✅ Categories seeded');
 
-  // 2. Seed Brands
-  const brands = [
-    { id: 'lg', name: 'LG', logo: 'hardware-chip-outline' },
-    { id: 'samsung', name: 'Samsung', logo: 'phone-portrait-outline' },
-    { id: 'whirlpool', name: 'Whirlpool', logo: 'sync-outline' },
-    { id: 'voltas', name: 'Voltas', logo: 'snow-outline' },
-    { id: 'sony', name: 'Sony', logo: 'tv-outline' },
-    { id: 'kent', name: 'Kent', logo: 'water-outline' },
-    { id: 'ifb', name: 'IFB', logo: 'grid-outline' },
-    { id: 'daikin', name: 'Daikin', logo: 'thermometer-outline' },
-  ];
+  for (const cat of subCategories) {
+    await prisma.category.upsert({
+      where: { id: cat.id },
+      update: {
+        name: cat.name,
+        icon: cat.icon || null,
+        description: cat.description || null,
+        popular: !!cat.popular,
+        parentId: cat.parentId,
+      },
+      create: {
+        id: cat.id,
+        name: cat.name,
+        icon: cat.icon || null,
+        description: cat.description || null,
+        popular: !!cat.popular,
+        parentId: cat.parentId,
+      },
+    });
+  }
+  console.log(`✅ Seeded ${seedData.categories.length} categories (${topLevelCategories.length} top-level, ${subCategories.length} sub-categories)`);
 
-  for (const brand of brands) {
+  // 2. Seed Brands: 12 verified TV brands
+  console.log('🏷️  Seeding TV Brands...');
+  const tvBrands = seedData.brands.tv || [];
+  for (const b of tvBrands) {
     await prisma.brand.upsert({
-      where: { id: brand.id },
-      update: brand,
-      create: brand,
+      where: { id: b.id },
+      update: {
+        name: b.name,
+        logo: b.logo || null,
+      },
+      create: {
+        id: b.id,
+        name: b.name,
+        logo: b.logo || null,
+      },
     });
   }
-  console.log('✅ Brands seeded');
+  console.log(`✅ Seeded ${tvBrands.length} verified TV brands`);
 
-  // 3. Seed Products
-  const products = [
-    { id: 'p-ac-lg', name: 'LG Dual Inverter Split AC (1.5 Ton)', categoryId: 'ac', brandId: 'lg', image: 'snow-outline', startingPrice: 599 },
-    { id: 'p-ac-samsung', name: 'Samsung WindFree Split AC', categoryId: 'ac', brandId: 'samsung', image: 'snow-outline', startingPrice: 579 },
-    { id: 'p-ac-voltas', name: 'Voltas Adjustable Inverter Window AC', categoryId: 'ac', brandId: 'voltas', image: 'snow-outline', startingPrice: 499 },
-    { id: 'p-ac-daikin', name: 'Daikin 3 Star Inverter Split AC', categoryId: 'ac', brandId: 'daikin', image: 'snow-outline', startingPrice: 649 },
-    { id: 'p-wm-lg', name: 'LG 8kg AI Direct Drive Front Load', categoryId: 'washing-machine', brandId: 'lg', image: 'aperture-outline', startingPrice: 649 },
-    { id: 'p-wm-samsung', name: 'Samsung EcoBubble Top Load Washer', categoryId: 'washing-machine', brandId: 'samsung', image: 'aperture-outline', startingPrice: 499 },
-    { id: 'p-wm-ifb', name: 'IFB Senator Aqua VX 8kg Front Load', categoryId: 'washing-machine', brandId: 'ifb', image: 'aperture-outline', startingPrice: 699 },
-    { id: 'p-wm-whirlpool', name: 'Whirlpool Stainwash Pro 7.5kg Top Load', categoryId: 'washing-machine', brandId: 'whirlpool', image: 'aperture-outline', startingPrice: 459 },
-    { id: 'p-ref-lg', name: 'LG Smart Inverter Frost Free Double Door', categoryId: 'refrigerator', brandId: 'lg', image: 'cube-outline', startingPrice: 749 },
-    { id: 'p-ref-samsung', name: 'Samsung Convertible 5in1 Double Door', categoryId: 'refrigerator', brandId: 'samsung', image: 'cube-outline', startingPrice: 799 },
-    { id: 'p-ref-whirlpool', name: 'Whirlpool Protton 3-Door Refrigerator', categoryId: 'refrigerator', brandId: 'whirlpool', image: 'cube-outline', startingPrice: 699 },
-    { id: 'p-tv-sony', name: 'Sony Bravia 55" 4K Ultra HD Smart LED TV', categoryId: 'tv', brandId: 'sony', image: 'tv-outline', startingPrice: 499 },
-    { id: 'p-tv-lg', name: 'LG 43" 4K Smart WebOS TV', categoryId: 'tv', brandId: 'lg', image: 'tv-outline', startingPrice: 399 },
-    { id: 'p-tv-samsung', name: 'Samsung Crystal 4K Neo Series Smart TV', categoryId: 'tv', brandId: 'samsung', image: 'tv-outline', startingPrice: 429 },
-    { id: 'p-wp-kent', name: 'Kent Grand Plus RO + UV + UF Water Purifier', categoryId: 'water-purifier', brandId: 'kent', image: 'water-outline', startingPrice: 349 },
-    { id: 'p-elec-gen', name: 'Home Electrical Wiring & Switchboard Inspection', categoryId: 'electrical', brandId: 'lg', image: 'flash-outline', startingPrice: 299 },
-  ];
+  // 3. Seed Samsung TV Catalog (Series / Product + Variants)
+  console.log('📺 Seeding Samsung TV Catalog...');
+  const samsungSeries = seedData.tv_catalog_verified?.samsung || [];
+  for (const series of samsungSeries) {
+    const startingPrice = Array.isArray(series.variants) && series.variants.length > 0
+      ? Math.min(...series.variants.map((v: any) => v.price))
+      : 0;
 
-  for (const prod of products) {
-    await prisma.product.upsert({
-      where: { id: prod.id },
-      update: prod,
-      create: prod,
+    const product = await prisma.product.upsert({
+      where: { id: series.series_id },
+      update: {
+        name: series.name,
+        slug: series.series_id,
+        description: series.description || null,
+        startingPrice,
+        featuresJson: JSON.stringify(series.featuresJson || []),
+        categoryId: 'tv-video-audio',
+        brandId: 'samsung',
+      },
+      create: {
+        id: series.series_id,
+        name: series.name,
+        slug: series.series_id,
+        description: series.description || null,
+        startingPrice,
+        featuresJson: JSON.stringify(series.featuresJson || []),
+        categoryId: 'tv-video-audio',
+        brandId: 'samsung',
+      },
     });
-  }
-  console.log('✅ Products seeded');
 
-  // 4. Seed Services and Service Options
+    if (Array.isArray(series.variants)) {
+      for (const v of series.variants) {
+        const variantId = `${series.series_id}-${v.modelNumber}-${v.sizeValue || 'std'}`;
+        await prisma.productVariant.upsert({
+          where: { id: variantId },
+          update: {
+            productId: product.id,
+            modelNumber: v.modelNumber,
+            sizeLabel: v.sizeLabel,
+            sizeValue: v.sizeValue ?? null,
+            price: v.price,
+            originalPrice: v.originalPrice ?? null,
+            releaseYear: v.releaseYear ?? null,
+            specsJson: JSON.stringify(v.specsJson || {}),
+            image: v.image ?? null,
+            inStock: v.inStock !== false,
+          },
+          create: {
+            id: variantId,
+            productId: product.id,
+            modelNumber: v.modelNumber,
+            sizeLabel: v.sizeLabel,
+            sizeValue: v.sizeValue ?? null,
+            price: v.price,
+            originalPrice: v.originalPrice ?? null,
+            releaseYear: v.releaseYear ?? null,
+            specsJson: JSON.stringify(v.specsJson || {}),
+            image: v.image ?? null,
+            inStock: v.inStock !== false,
+          },
+        });
+      }
+    }
+  }
+  console.log(`✅ Seeded ${samsungSeries.length} Samsung series with all product variants`);
+
+  // 4. Seed Other Brands Sample (LG and Sony sample series)
+  console.log('📺 Seeding Sample Series for LG and Sony...');
+  const otherSamples = seedData.tv_catalog_verified?.other_brands_sample || {};
+  for (const [brandId, seriesList] of Object.entries(otherSamples)) {
+    if (Array.isArray(seriesList)) {
+      for (const series of seriesList as any[]) {
+        const startingPrice = Array.isArray(series.variants) && series.variants.length > 0
+          ? Math.min(...series.variants.map((v: any) => v.price))
+          : 0;
+
+        const product = await prisma.product.upsert({
+          where: { id: series.series_id },
+          update: {
+            name: series.name,
+            slug: series.series_id,
+            description: series.description || null,
+            startingPrice,
+            featuresJson: JSON.stringify(series.featuresJson || []),
+            categoryId: 'tv-video-audio',
+            brandId,
+          },
+          create: {
+            id: series.series_id,
+            name: series.name,
+            slug: series.series_id,
+            description: series.description || null,
+            startingPrice,
+            featuresJson: JSON.stringify(series.featuresJson || []),
+            categoryId: 'tv-video-audio',
+            brandId,
+          },
+        });
+
+        if (Array.isArray(series.variants)) {
+          for (const v of series.variants) {
+            const variantId = `${series.series_id}-${v.modelNumber}-${v.sizeValue || 'std'}`;
+            await prisma.productVariant.upsert({
+              where: { id: variantId },
+              update: {
+                productId: product.id,
+                modelNumber: v.modelNumber,
+                sizeLabel: v.sizeLabel,
+                sizeValue: v.sizeValue ?? null,
+                price: v.price,
+                originalPrice: v.originalPrice ?? null,
+                releaseYear: v.releaseYear ?? null,
+                specsJson: JSON.stringify(v.specsJson || {}),
+                image: v.image ?? null,
+                inStock: v.inStock !== false,
+              },
+              create: {
+                id: variantId,
+                productId: product.id,
+                modelNumber: v.modelNumber,
+                sizeLabel: v.sizeLabel,
+                sizeValue: v.sizeValue ?? null,
+                price: v.price,
+                originalPrice: v.originalPrice ?? null,
+                releaseYear: v.releaseYear ?? null,
+                specsJson: JSON.stringify(v.specsJson || {}),
+                image: v.image ?? null,
+                inStock: v.inStock !== false,
+              },
+            });
+          }
+        }
+      }
+    }
+  }
+  console.log('✅ Seeded sample series for LG & Sony');
+
+  // 5. Seed Services and Service Options (mapped to new sub-categories)
+  console.log('🛠️  Seeding Services & Options...');
   const servicesData = [
     {
-      id: 'ac-jet-service',
-      categoryId: 'ac',
-      title: 'AC Power Jet Service & Repair',
-      subtitle: 'Deep foam cleaning of indoor & outdoor unit coils with pressure washer',
-      image: 'snow-outline',
-      rating: 4.85,
-      reviewCount: 2340,
-      options: [
-        {
-          id: 'opt-ac-1',
-          title: 'Foam & Power Jet Service (1 Unit)',
-          description: 'Complete deep cleaning using specialized jet pump and foam solution',
-          price: 599,
-          originalPrice: 899,
-          durationMinutes: 45,
-          rating: 4.9,
-          reviewCount: 1420,
-          featuresJson: JSON.stringify([
-            'High pressure jet pump wash',
-            'Anti-bacterial foam cleaning',
-            'Drain pipe clearing',
-            'Gas pressure inspection check',
-          ]),
-        },
-        {
-          id: 'opt-ac-2',
-          title: 'AC Gas Refill & Service Package',
-          description: 'Full gas leak repair, pressure testing & R32/R410 gas charging',
-          price: 2499,
-          originalPrice: 2999,
-          durationMinutes: 90,
-          rating: 4.8,
-          reviewCount: 920,
-          featuresJson: JSON.stringify([
-            'Complete refrigerant gas charging',
-            'Nitrogen leak detection test',
-            'Complimentary jet wash service',
-            '30-day post service warranty',
-          ]),
-        },
-      ],
-    },
-    {
-      id: 'wm-deep-clean',
-      categoryId: 'washing-machine',
-      title: 'Washing Machine Descaling & Repair',
-      subtitle: 'Internal drum descaling, filter flushing, and motor spin test',
-      image: 'aperture-outline',
-      rating: 4.78,
-      reviewCount: 1150,
-      options: [
-        {
-          id: 'opt-wm-1',
-          title: 'Drum Descaling & Deep Service',
-          description: 'Chemical tub wash and lint filter sanitation',
-          price: 499,
-          originalPrice: 699,
-          durationMinutes: 40,
-          rating: 4.8,
-          reviewCount: 890,
-          featuresJson: JSON.stringify([
-            'Organic descaling treatment',
-            'Vibration & noise inspection',
-            'Water inlet valve cleaning',
-          ]),
-        },
-        {
-          id: 'opt-wm-2',
-          title: 'Full Machine Check & Motor Repair',
-          description: 'Comprehensive diagnostic, belt replacement & noise fix',
-          price: 899,
-          originalPrice: 1199,
-          durationMinutes: 60,
-          rating: 4.7,
-          reviewCount: 260,
-          featuresJson: JSON.stringify([
-            'Motor gear & belt check',
-            'Drain pump unclogging',
-            '30-day labor warranty',
-          ]),
-        },
-      ],
-    },
-    {
-      id: 'ref-cooling-service',
-      categoryId: 'refrigerator',
-      title: 'Refrigerator Maintenance & Cooling Repair',
-      subtitle: 'Compressor health check, thermostat calibration & gas top-up',
-      image: 'cube-outline',
-      rating: 4.82,
-      reviewCount: 980,
-      options: [
-        {
-          id: 'opt-ref-1',
-          title: 'Standard Refrigerator Diagnostic & Cleaning',
-          description: 'Coil vacuuming, drain cleaning, and gasket seal inspection',
-          price: 449,
-          originalPrice: 599,
-          durationMinutes: 45,
-          rating: 4.8,
-          reviewCount: 540,
-          featuresJson: JSON.stringify([
-            'Condenser coil cleaning',
-            'Thermostat testing',
-            'Door seal leak check',
-          ]),
-        },
-        {
-          id: 'opt-ref-2',
-          title: 'Gas Charging & Cooling Overhaul',
-          description: 'Complete gas recharge, filter drier replacement, and leak repair',
-          price: 1999,
-          originalPrice: 2499,
-          durationMinutes: 90,
-          rating: 4.9,
-          reviewCount: 440,
-          featuresJson: JSON.stringify([
-            'Refrigerant gas refill',
-            'Filter drier replace',
-            'Free 30-day warranty',
-          ]),
-        },
-      ],
-    },
-    {
       id: 'tv-wall-mounting',
-      categoryId: 'tv',
-      title: 'TV Wall Mounting & Screen Repair',
-      subtitle: 'Precision wall mounting, wire concealment & display diagnostics',
+      categoryId: 'tv-video-audio',
+      title: 'TV Wall Mounting & Installation',
+      subtitle: 'Precision wall mounting, wire concealment & display setup',
       image: 'tv-outline',
       rating: 4.9,
       reviewCount: 1620,
       options: [
         {
           id: 'opt-tv-1',
-          title: 'Wall Mount Installation (Up to 55")',
+          title: 'Standard Wall Mount Installation (Up to 55")',
           description: 'Heavy-duty wall bracket mounting with cable alignment',
           price: 399,
           originalPrice: 599,
@@ -335,84 +245,97 @@ async function main() {
         },
         {
           id: 'opt-tv-2',
-          title: 'Display Panel Repair Diagnostic',
-          description: 'Backlight issue check, motherboard fix, and audio troubleshooting',
-          price: 599,
-          originalPrice: 799,
-          durationMinutes: 60,
-          rating: 4.8,
+          title: 'Premium Large Screen Mount (65" & Above)',
+          description: 'Reinforced dual-arm swivel mounting with concealed wiring',
+          price: 699,
+          originalPrice: 999,
+          durationMinutes: 45,
+          rating: 4.95,
           reviewCount: 420,
           featuresJson: JSON.stringify([
-            'Component level diagnosis',
-            'Sound & display tune-up',
-            'Upfront repair estimate',
+            'Swivel bracket installation',
+            'Concealed conduit wiring',
+            'Display angle calibration',
           ]),
         },
       ],
     },
     {
-      id: 'wp-ro-service',
-      categoryId: 'water-purifier',
-      title: 'Water Purifier RO Filter Service',
-      subtitle: 'Sediment & carbon filter replacement, RO membrane flushing & TDS check',
-      image: 'water-outline',
-      rating: 4.88,
-      reviewCount: 1430,
+      id: 'ac-deep-cleaning',
+      categoryId: 'acs',
+      title: 'AC Power Jet Deep Cleaning Service',
+      subtitle: 'High-pressure foam wash, cooling coil sanitization & filter cleanup',
+      image: 'snow-outline',
+      rating: 4.92,
+      reviewCount: 2350,
       options: [
         {
-          id: 'opt-wp-1',
-          title: 'Standard RO Filter Maintenance',
-          description: 'Sediment & pre-carbon filter replacement with TDS level tuning',
-          price: 349,
-          originalPrice: 499,
-          durationMinutes: 35,
+          id: 'opt-ac-1',
+          title: 'Power Jet Foam Wash (1 Split AC)',
+          description: 'Indoor & outdoor unit deep jet spray wash with antibacterial foam',
+          price: 599,
+          originalPrice: 799,
+          durationMinutes: 45,
           rating: 4.9,
-          reviewCount: 950,
+          reviewCount: 1800,
           featuresJson: JSON.stringify([
-            'Pre-filter candle replacement',
-            'TDS water quality test',
-            'Leak proof tube check',
-          ]),
-        },
-        {
-          id: 'opt-wp-2',
-          title: 'Complete RO Membrane & Filter Overhaul',
-          description: 'All 4 filters + RO membrane replacement with UV lamp check',
-          price: 1899,
-          originalPrice: 2299,
-          durationMinutes: 60,
-          rating: 4.8,
-          reviewCount: 480,
-          featuresJson: JSON.stringify([
-            'Genuine RO membrane unit',
-            'Complete filter kit swap',
-            'UV chamber sterilization',
+            'High-pressure power jet wash',
+            'Indoor cooling coil foam clean',
+            'Outdoor condenser cleaning',
+            'Drain tray & pipe flush',
           ]),
         },
       ],
     },
     {
-      id: 'elec-general-repair',
-      categoryId: 'electrical',
-      title: 'Home Electrical Repair & Installation',
-      subtitle: 'Switchboard installation, wiring inspection & appliance setup',
-      image: 'flash-outline',
-      rating: 4.75,
-      reviewCount: 820,
+      id: 'wm-drum-service',
+      categoryId: 'washing-machines',
+      title: 'Washing Machine Descaling & Service',
+      subtitle: 'Drum deep clean, descaling, motor check & drainage line clearing',
+      image: 'washing-machine',
+      rating: 4.85,
+      reviewCount: 1890,
       options: [
         {
-          id: 'opt-elec-1',
-          title: 'Switchboard & Socket Repair',
-          description: 'Fix blown fuses, faulty switches & short circuit troubleshooting',
+          id: 'opt-wm-1',
+          title: 'Complete Tub Descaling & Health Check',
+          description: 'Removal of calcium deposits, lint filter cleaning & motor check',
+          price: 499,
+          originalPrice: 699,
+          durationMinutes: 40,
+          rating: 4.85,
+          reviewCount: 1250,
+          featuresJson: JSON.stringify([
+            'Heavy-duty drum descaling',
+            'Lint filter deep clean',
+            'Water inlet filter flush',
+            'Drain pump inspection',
+          ]),
+        },
+      ],
+    },
+    {
+      id: 'ref-cooling-repair',
+      categoryId: 'refrigerators',
+      title: 'Refrigerator Cooling & Gas Service',
+      subtitle: 'Comprehensive cooling diagnostics, thermostat calibration & gas charging',
+      image: 'cube-outline',
+      rating: 4.8,
+      reviewCount: 940,
+      options: [
+        {
+          id: 'opt-ref-1',
+          title: 'Cooling Diagnostic & Inspection',
+          description: 'Compressor check, thermostat test, coil inspection & gas pressure check',
           price: 299,
-          originalPrice: 399,
+          originalPrice: 449,
           durationMinutes: 30,
           rating: 4.8,
-          reviewCount: 520,
+          reviewCount: 500,
           featuresJson: JSON.stringify([
-            'Short circuit detection',
-            'Switchboard replacement',
-            'Safety ground check',
+            'Compressor health inspection',
+            'Cooling coil check',
+            'Thermostat accuracy test',
           ]),
         },
       ],
@@ -435,9 +358,10 @@ async function main() {
       });
     }
   }
-  console.log('✅ Services & Service Options seeded');
+  console.log('✅ Seeded Services and Options');
 
-  // 5. Seed Technicians
+  // 6. Seed Technicians
+  console.log('👷 Seeding Technicians...');
   const technicians = [
     {
       id: 'tech-101',
@@ -470,9 +394,103 @@ async function main() {
       create: tech,
     });
   }
-  console.log('✅ Technicians seeded');
+  console.log('✅ Seeded Technicians');
 
-  console.log('🎉 Seed process completed successfully!');
+  // 7. Seed Demo User & Sample Booking
+  console.log('👤 Seeding Demo User & Booking...');
+  const demoUser = await prisma.user.upsert({
+    where: { clerkUserId: 'user_dev_demo_1' },
+    update: {
+      name: 'Rashi Singh',
+      email: 'rashi@zevato.app',
+      phone: '+91 98765 43210',
+      profileCompleted: true,
+    },
+    create: {
+      id: 'usr-demo-1',
+      clerkUserId: 'user_dev_demo_1',
+      name: 'Rashi Singh',
+      email: 'rashi@zevato.app',
+      phone: '+91 98765 43210',
+      profileCompleted: true,
+    },
+  });
+
+  const demoAddress = await prisma.address.upsert({
+    where: { id: 'addr-demo-1' },
+    update: {
+      userId: demoUser.id,
+      title: 'Home',
+      type: 'home',
+      street: 'Flat 402, Sunshine Apartments, 12th Main',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      zipCode: '560034',
+      isDefault: true,
+    },
+    create: {
+      id: 'addr-demo-1',
+      userId: demoUser.id,
+      title: 'Home',
+      type: 'home',
+      street: 'Flat 402, Sunshine Apartments, 12th Main',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      zipCode: '560034',
+      isDefault: true,
+    },
+  });
+
+  await prisma.booking.upsert({
+    where: { bookingNumber: 'BK-2026-001' },
+    update: {
+      userId: demoUser.id,
+      serviceId: 'tv-wall-mounting',
+      serviceOptionId: 'opt-tv-1',
+      categoryId: 'tv-video-audio',
+      brandId: 'samsung',
+      productId: 'samsung-neo-qled-4k',
+      productVariantId: 'samsung-neo-qled-4k-QN90F-55',
+      addressId: demoAddress.id,
+      technicianId: 'tech-101',
+      scheduledDate: 'Tomorrow',
+      scheduledTimeSlot: '10:00 AM - 12:00 PM',
+      bookingStatus: 'technician_assigned',
+      paymentStatus: 'payment_paid',
+      paymentMethodType: 'upi',
+      paymentMethodTitle: 'Google Pay (UPI)',
+      subtotal: 399,
+      discount: 0,
+      tax: 71.82,
+      total: 470.82,
+    },
+    create: {
+      id: 'bk-demo-1',
+      bookingNumber: 'BK-2026-001',
+      userId: demoUser.id,
+      serviceId: 'tv-wall-mounting',
+      serviceOptionId: 'opt-tv-1',
+      categoryId: 'tv-video-audio',
+      brandId: 'samsung',
+      productId: 'samsung-neo-qled-4k',
+      productVariantId: 'samsung-neo-qled-4k-QN90F-55',
+      addressId: demoAddress.id,
+      technicianId: 'tech-101',
+      scheduledDate: 'Tomorrow',
+      scheduledTimeSlot: '10:00 AM - 12:00 PM',
+      bookingStatus: 'technician_assigned',
+      paymentStatus: 'payment_paid',
+      paymentMethodType: 'upi',
+      paymentMethodTitle: 'Google Pay (UPI)',
+      subtotal: 399,
+      discount: 0,
+      tax: 71.82,
+      total: 470.82,
+    },
+  });
+  console.log('✅ Seeded Demo User and Booking');
+
+  console.log('🎉 Seed completed successfully!');
 }
 
 main()

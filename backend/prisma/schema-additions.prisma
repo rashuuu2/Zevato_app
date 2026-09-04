@@ -1,0 +1,103 @@
+// ============================================================
+// SCHEMA ADDITIONS — append/merge into existing schema.prisma
+// ============================================================
+// WHY THESE CHANGES ARE NEEDED:
+// The current schema (Category/Brand/Product/Service/ServiceOption) has
+// no way to represent what the UI actually shows:
+//   Category → Sub-category → Brand → Series → Model/Size variant (with specs)
+// e.g. Electronics & Appliances → TV, Video & Audio → Samsung → Neo QLED Series
+//      → QN90F in 55"/65"/75"/85" each with its own price + specs
+//
+// Two structural gaps are fixed below:
+//   1. Category needs to be self-referential (parent/child) to support
+//      sub-categories (e.g. "TV, Video & Audio" living under
+//      "Electronics & Appliances").
+//   2. Product needs a child model (ProductVariant) to represent the
+//      same series sold in different sizes/models at different prices,
+//      each with its own spec sheet — currently Product has only a
+//      single flat `startingPrice` with no variant support.
+// ============================================================
+
+model Category {
+  id          String     @id
+  name        String
+  icon        String?
+  description String?
+  itemCount   Int?
+  popular     Boolean    @default(false)
+
+  // NEW: self-relation for sub-categories
+  parentId    String?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+
+  products    Product[]
+  services    Service[]
+  bookings    Booking[]
+}
+
+model Brand {
+  id       String    @id
+  name     String
+  logo     String?
+  products Product[]
+  bookings Booking[]
+}
+
+// Product now represents a SERIES (e.g. "Neo QLED Series", "The Frame Series"),
+// not a single sellable SKU. The actual purchasable unit is ProductVariant.
+model Product {
+  id            String           @id @default(uuid())
+  name          String           // e.g. "Neo QLED Series"
+  slug          String?          @unique
+  image         String?
+  description   String?          // e.g. "Next level brightness, contrast..."
+  startingPrice Float?           // lowest variant price, for card display
+  featuresJson  String?          // JSON array of strings, e.g. ["Dolby Atmos","165Hz"]
+
+  categoryId    String
+  category      Category         @relation(fields: [categoryId], references: [id])
+  brandId       String
+  brand         Brand            @relation(fields: [brandId], references: [id])
+
+  variants      ProductVariant[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+// NEW MODEL — one row per purchasable size/model combination
+model ProductVariant {
+  id            String   @id @default(uuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+
+  modelNumber   String   // e.g. "QN90F"
+  sizeLabel     String   // e.g. "55 inch" — kept as label since some
+                          // categories (e.g. washing machines) use
+                          // capacity ("7 kg") instead of screen size
+  sizeValue     Int?     // numeric sort key, e.g. 55 (inches) or 7 (kg) — nullable
+                          // for items with no size axis
+  price         Float
+  originalPrice Float?
+  releaseYear   Int?
+  specsJson     String?  // JSON object, e.g.
+                          // {"resolution":"4K Ultra HD","refreshRate":"165Hz",
+                          //  "processor":"NQ4 AI Gen3","hdr":"Neo Quantum HDR+",
+                          //  "audio":"Dolby Atmos"}
+  image         String?  // optional variant-specific image override
+  inStock       Boolean  @default(true)
+
+  bookings      Booking[]
+
+  @@index([productId])
+}
+
+// ============================================================
+// Booking gets one more optional FK so a booking can reference the
+// exact model/size purchased, not just the parent Product/series.
+// Add this field to the EXISTING Booking model:
+// ============================================================
+//   productVariantId String?
+//   productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id])
+// ============================================================

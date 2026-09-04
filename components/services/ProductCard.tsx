@@ -25,7 +25,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, selected, onP
       </View>
       <View style={styles.details}>
         <Text style={[styles.name, selected && styles.selectedName]}>{product.name}</Text>
-        <Text style={styles.priceText}>Starts at {formatCurrency(product.startingPrice)}</Text>
+        <Text style={styles.priceText}>Starts at {formatCurrency(product.startingPrice ?? 0)}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color={selected ? colors.primary : colors.textMuted} />
     </TouchableOpacity>
