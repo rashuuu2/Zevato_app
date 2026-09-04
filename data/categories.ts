@@ -1,65 +1,74 @@
 import { ServiceCategory } from '@/types/service';
 
-// Top-level categories matching seed-data.json
+// Top-level categories
 export const categories: ServiceCategory[] = [
   {
-    id: 'electronics-appliances',
-    name: 'Electronics & Appliances',
-    icon: 'monitor',
-    description: 'Repair, install and maintain all your electronic items with ease.',
-    itemCount: 11,
+    id: 'electronics',
+    name: 'Electronics',
+    icon: 'tv-outline',
+    description: 'TV, laptop, computer & display repair and servicing',
+    itemCount: 12,
     popular: true,
     parentId: null,
   },
   {
-    id: 'car-services',
-    name: 'Car Services',
-    icon: 'car',
-    description: 'Car wash, detailing, AC service & general maintenance',
-    itemCount: 4,
-    popular: false,
+    id: 'appliances',
+    name: 'Appliances',
+    icon: 'home-outline',
+    description: 'AC, washing machine, refrigerator & kitchen appliance repair',
+    itemCount: 18,
+    popular: true,
     parentId: null,
   },
   {
     id: 'plumbing',
     name: 'Plumbing',
-    icon: 'faucet',
+    icon: 'water-outline',
     description: 'Pipe fitting, leak repair, tap & drain fixing',
-    itemCount: 4,
+    itemCount: 10,
     popular: true,
     parentId: null,
   },
   {
     id: 'electricals',
     name: 'Electricals',
-    icon: 'flash',
+    icon: 'flash-outline',
     description: 'Wiring, switchboards, fan & light installation',
-    itemCount: 4,
+    itemCount: 15,
     popular: true,
+    parentId: null,
+  },
+  {
+    id: 'car-services',
+    name: 'Car Services',
+    icon: 'car-outline',
+    description: 'Car wash, detailing, AC service & general maintenance',
+    itemCount: 8,
+    popular: false,
     parentId: null,
   },
   {
     id: 'cleaning',
     name: 'Cleaning',
-    icon: 'broom',
+    icon: 'sparkles-outline',
     description: 'Deep cleaning, sofa cleaning, pest control & sanitization',
-    itemCount: 4,
+    itemCount: 14,
     popular: true,
     parentId: null,
   },
   {
     id: 'furniture',
     name: 'Furniture',
-    icon: 'sofa',
+    icon: 'bed-outline',
     description: 'Assembly, repair, polishing & carpentry work',
-    itemCount: 3,
+    itemCount: 9,
     popular: false,
     parentId: null,
   },
   {
-    id: 'more-services',
-    name: 'More Services',
-    icon: 'dots-grid',
+    id: 'more',
+    name: 'More',
+    icon: 'grid-outline',
     description: 'Browse all available service categories',
     itemCount: 0,
     popular: false,
@@ -67,14 +76,14 @@ export const categories: ServiceCategory[] = [
   },
 ];
 
-// Sub-categories under electronics-appliances matching seed-data.json
+// Sub-categories under electronics & appliances
 export const subCategories: ServiceCategory[] = [
   {
     id: 'tv-video-audio',
     name: 'TV, Video & Audio',
     icon: 'monitor-speaker',
     description: 'LED, OLED, QLED TVs, audio systems and home theater',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: true,
   },
   {
@@ -82,7 +91,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Kitchen & Other Appliances',
     icon: 'blender',
     description: 'Mixer, microwave, chimney & water purifier',
-    parentId: 'electronics-appliances',
+    parentId: 'appliances',
     popular: false,
   },
   {
@@ -90,7 +99,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Computers & Laptops',
     icon: 'laptop',
     description: 'Laptop repair, desktop servicing, OS installation',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: true,
   },
   {
@@ -98,7 +107,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Cameras & Lenses',
     icon: 'camera',
     description: 'DSLR, mirrorless camera and lens cleaning & repair',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: false,
   },
   {
@@ -106,7 +115,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Games & Entertainment',
     icon: 'game-controller',
     description: 'Gaming console repair, controllers & VR headsets',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: false,
   },
   {
@@ -114,7 +123,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Refrigerators',
     icon: 'fridge',
     description: 'Single, double door & side-by-side fridge servicing',
-    parentId: 'electronics-appliances',
+    parentId: 'appliances',
     popular: true,
   },
   {
@@ -122,7 +131,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Computer Accessories',
     icon: 'keyboard',
     description: 'Keyboards, mice, monitors & peripherals',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: false,
   },
   {
@@ -130,7 +139,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Printers & Scanners',
     icon: 'printer',
     description: 'Inkjet, laser printer and scanner setup & repair',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: false,
   },
   {
@@ -138,7 +147,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'ACs',
     icon: 'snow',
     description: 'Split & window AC jet service, gas refill & installation',
-    parentId: 'electronics-appliances',
+    parentId: 'appliances',
     popular: true,
   },
   {
@@ -146,7 +155,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Hard Disks & Storage',
     icon: 'harddisk',
     description: 'Data recovery, SSD upgrade & external drive repair',
-    parentId: 'electronics-appliances',
+    parentId: 'electronics',
     popular: false,
   },
   {
@@ -154,7 +163,7 @@ export const subCategories: ServiceCategory[] = [
     name: 'Washing Machines',
     icon: 'washing-machine',
     description: 'Front load, top load & semi-automatic machine repair',
-    parentId: 'electronics-appliances',
+    parentId: 'appliances',
     popular: true,
   },
 ];

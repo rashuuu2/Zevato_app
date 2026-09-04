@@ -57,6 +57,23 @@ async function main() {
       },
     });
   }
+
+  // Clean up obsolete categories that are no longer in seed-data.json
+  const validCategoryIds = seedData.categories.map((c: any) => c.id);
+  const obsolete = await prisma.category.findMany({
+    where: {
+      id: { notIn: validCategoryIds },
+      bookings: { none: {} },
+      products: { none: {} },
+    },
+  });
+  if (obsolete.length > 0) {
+    await prisma.category.deleteMany({
+      where: { id: { in: obsolete.map((o: any) => o.id) } },
+    });
+    console.log(`🧹 Cleaned up ${obsolete.length} obsolete categories: ${obsolete.map((o: any) => o.id).join(', ')}`);
+  }
+
   console.log(`✅ Seeded ${seedData.categories.length} categories (${topLevelCategories.length} top-level, ${subCategories.length} sub-categories)`);
 
   // 2. Seed Brands: 12 verified TV brands
