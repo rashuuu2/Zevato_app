@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Zevato_app",
-    "slug": "Zevato_app",
+    "slug": "zevota-care",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +15,8 @@
         "backgroundColor": "#0075FF",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rashi0001.zevotacare"
     },
     "web": {
       "output": "static",
@@ -47,6 +48,7 @@
       "eas": {
         "projectId": "4d9c741c-8511-452e-8bed-f93923e8be03"
       }
-    }
+    },
+    "owner": "rashi0001"
   }
 }
